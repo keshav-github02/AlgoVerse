@@ -1,0 +1,21 @@
+# Store LF in the repository, check out native line endings locally.
+# Without this, a Windows working tree commits CRLF and every file reads as
+# fully rewritten the moment another machine or CI touches it.
+* text=auto eol=lf
+
+# Binary assets — never normalise or diff these as text.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.svg   text
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.pdf   binary
+
+# Generated lockfile: keep it tracked, keep it out of diffs and reviews.
+pnpm-lock.yaml linguist-generated=true -diff
