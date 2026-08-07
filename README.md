@@ -8,26 +8,27 @@ through every internal change, inspect memory, scrub the timeline, and compare v
 
 ## Status
 
-**Early development.** The engine core and the first plugin work; there is no user interface yet.
-
-Working today: the event log and time travel, the spec-driven command parser, the plugin contract
-with its conformance kit, a persistent segment tree that runs `build`, `update`, `query` and
-`compare`, and a stack that exists to keep the contract honest.
+**Early development, but usable.** The application runs: pick a structure, type commands, and step
+through every internal change.
 
 ```
 pnpm install
+pnpm dev            # the app, at http://localhost:5173
 pnpm check          # type-check, then every package's property tests
-pnpm demo           # render real plugin output to demo/index.html
+pnpm demo           # render a scrubbable page to demo/index.html
 ```
 
-Requires Node 22.6 or newer. Sources run directly as TypeScript, with no build step.
+Requires Node 22.6 or newer. Packages run directly as TypeScript with no build step; only the
+application is bundled.
 
-`pnpm demo` drives the real engine end to end — parse, execute, file events, replay, lay out,
-render — and writes a scrubbable page. Open `demo/index.html` in a browser and step through every
-event, or jump operation by operation. Each frame is reconstructed from the event log, not read out
-of the plugin.
+In the app: choose a structure on the left, type a command below the canvas, then scrub the
+timeline at the top. `Space` plays and pauses, arrow keys step, `Shift` with them jumps operation to
+operation. Click a node to inspect it. Every frame is reconstructed from the event log rather than
+read out of the plugin, so scrubbing backwards shows what a node *was*, not what it became.
 
-There is also a self-contained layout prototype at `spike/segment-tree-visual/index.html`, kept for
+`pnpm demo` writes the same thing to a standalone page with no server, at `demo/index.html`.
+
+There is also an early layout prototype at `spike/segment-tree-visual/index.html`, kept for
 comparison. It predates the engine and hardcodes its data.
 
 ## The core idea
@@ -47,7 +48,7 @@ sharing all fall out of the same mechanism instead of needing four separate impl
 
 ## Architecture
 
-Five packages, split along the seams that actually matter:
+Four packages, split along the seams that actually matter:
 
 | Package | Responsibility | State |
 | --- | --- | --- |
@@ -55,9 +56,8 @@ Five packages, split along the seams that actually matter:
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
 | `plugins/*` | One package per algorithm or data structure | segment tree + stack |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera — nothing else | SVG working |
-| `ui` | Reusable interface components | not started |
 
-Plus `apps/web`, the application shell.
+Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
 
 Three layers, not two: a **plugin** declares semantic structure and a layout hint, **core/layout**
 turns that into coordinates, and the **renderer** draws coordinates. Plugins stay free of pixel
@@ -80,7 +80,6 @@ algoverse/
 │   ├── core/
 │   ├── plugin-sdk/
 │   ├── renderer/
-│   ├── ui/
 │   └── plugins/
 ├── docs/
 └── spike/                   throwaway prototypes, deleted once superseded
@@ -102,12 +101,22 @@ abstraction; two expose most of its leaks.
 
 ## Technology
 
-React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Zustand. pnpm workspaces with Turborepo.
-Vitest for unit and property tests, Playwright for end-to-end once there is a UI worth testing.
-Rendering is SVG behind a `Renderer` interface, with D3 used for layout math only.
+In use today: React, TypeScript, Vite, Tailwind CSS and Zustand, on pnpm workspaces. Rendering is
+hand-written SVG behind a renderer interface. Tests are plain TypeScript files run directly by Node
+— every package exposes `check`.
 
-Phase 1 runs entirely in the browser: saves go to local storage, shared simulations are
-compressed into the URL. A backend arrives when accounts or collaboration require one.
+Deliberately not yet adopted, to keep the dependency surface honest:
+
+| Planned | Why not yet |
+| --- | --- |
+| Turborepo | Nothing takes long enough to need caching |
+| Vitest | The `check` scripts run in under a second with no runner |
+| Playwright | Worth adding once the interface stops changing weekly |
+| shadcn/ui | Only a handful of controls exist so far |
+| D3 | Layout is hand-written; `d3-hierarchy` becomes worthwhile at force-directed graphs |
+
+Phase 1 runs entirely in the browser. Saves to local storage and URL-compressed sharing are still
+to come; a backend arrives only when accounts or collaboration require one.
 
 ## Contributing
 

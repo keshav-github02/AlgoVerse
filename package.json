@@ -8,12 +8,23 @@
     "node": ">=22.6"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/web/tsconfig.json",
+    "dev": "pnpm --filter @algoverse/web dev",
+    "build": "pnpm --filter @algoverse/web build",
     "check": "pnpm typecheck && pnpm -r --sequential check",
     "demo": "pnpm --filter @algoverse/renderer demo"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.20.1",
-    "typescript": "~5.9.3"
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vite": "^6.4.3"
   }
 }

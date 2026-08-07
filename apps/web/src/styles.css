@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f1f4f7;
+  --panel: #ffffff;
+  --line: #d3dbe3;
+  --text: #171f27;
+  --dim: #596775;
+  --faint: #8695a3;
+  --bad: #b3341f;
+  --accent: #2c63c9;
+
+  /* Consumed by the renderer's own stylesheet. */
+  --av-node-bg: #ffffff;
+  --av-text: #171f27;
+  --av-faint: #8695a3;
+  --av-c0: #2c63c9;
+  --av-c1: #9c6612;
+  --av-c2: #8b3aa3;
+  --av-c3: #177a52;
+  --av-c4: #b1442e;
+  --av-c5: #3d6a80;
+  --av-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1216;
+    --panel: #151b21;
+    --line: #26313b;
+    --text: #dbe3eb;
+    --dim: #8494a3;
+    --faint: #63707c;
+    --bad: #f08a72;
+    --accent: #5b93f0;
+
+    --av-node-bg: #1a222a;
+    --av-text: #dbe3eb;
+    --av-faint: #63707c;
+    --av-c0: #5b93f0;
+    --av-c1: #e3a94a;
+    --av-c2: #c878dc;
+    --av-c3: #4bc38c;
+    --av-c4: #e8795e;
+    --av-c5: #7fa8c4;
+  }
+}
+
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); }
+
+/* The renderer's scene styles, kept verbatim so the app and the generated
+   demo page draw identically. */
+.av-edge { fill: none; stroke-linecap: round; stroke-width: 1.5; opacity: .55; }
+.av-edge.av-reused { stroke-width: 2.1; stroke-dasharray: 4 3.5; opacity: .95; }
+.av-node rect { stroke-width: 1.25; fill: var(--av-node-bg); }
+.av-node .av-value { font: 600 16px var(--av-mono); font-variant-numeric: tabular-nums;
+  fill: var(--av-text); }
+.av-node .av-label { font: 9.5px var(--av-mono); fill: var(--av-faint); }
+.av-node.av-highlight rect { stroke-width: 3; }
+.av-node.av-dim { opacity: .12; }
+.av-node.av-selected rect { stroke-width: 3.25; }
+.av-tick { stroke: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
