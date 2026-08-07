@@ -103,19 +103,20 @@ interface PluginInstance {
   reset(): void;
 }
 
-interface OperationResult {
-  ok: boolean;
-  value?: unknown;                        // the answer, e.g. sum = 12
-  events: readonly SimEvent[];
-  statsDelta: Partial<Statistics>;
-  error?: OperationError;
-}
+// A union, not optional fields: `ok` narrows to exactly one of value/error.
+// Events and stats are reported either way — a failed query may still have
+// visited nodes worth showing.
+type OperationResult =
+  | { ok: true;  value: unknown;         events: readonly SimEvent[]; statsDelta: Partial<Statistics> }
+  | { ok: false; error: OperationError;  events: readonly SimEvent[]; statsDelta: Partial<Statistics> };
 
 interface EngineContext {
   readonly rng: Rng;                      // seeded — never Math.random()
-  readonly emit: EventEmitter;
 }
 ```
+
+There is no emitter in the context. An operation *returns* its events rather than
+emitting them as it goes, which is what keeps it synchronous and its log complete.
 
 **Why not `build()` / `update()` / `query()`.** That shape is derived from one data structure. A
 graph plugin has no `update(index, value)`; DFS has no `query(l, r)`; Dijkstra has `run(source)`;
@@ -133,9 +134,23 @@ Phase 1 ships the persistent segment tree **and** a deliberately trivial second 
 array or a stack). One plugin reveals zero abstraction leaks — every accidental assumption still
 looks like the contract. Two reveal most of them, cheaply.
 
-`plugin-sdk` exports a conformance test kit. Every plugin runs it: commands parse and round-trip,
-`serialize` → `deserialize` is lossless, event logs re-derive to identical state, and no operation
-mutates a previously returned structure.
+`plugin-sdk` exports a conformance kit. It is handed a plugin and a script of command strings and
+derives the rest — it names no command. Fourteen checks cover metadata, spec well-formedness,
+JSON round-tripping of events and serialised state, determinism across fresh instances, `reset`,
+and error-versus-throw behaviour.
+
+The one that carries the most weight:
+
+> **The event log must fully describe the structure.** Replay the log through `core`'s reducer and
+> the resulting scene must match `getStructure()` exactly — same node ids, values, labels,
+> children, and roots.
+
+If a plugin mutates state without emitting an event, replay silently diverges from reality and
+time travel is broken in a way no unit test would catch. This check catches it.
+
+The probe for error handling is also derived rather than written: for every command declaring a
+`version` parameter, the kit synthesises a call against `v999` and requires an `ok: false` result
+rather than an exception.
 
 ---
 
@@ -151,6 +166,14 @@ Three layers, not two.
 
 Layout hints are a closed set: `tree | dag | force | linear | grid`. The plugin says "this is a
 DAG"; layout decides where things go.
+
+Each `StructureNode` also carries a **`slot`** — an opaque grouping key — and an **`origin`**, the
+version that allocated it. Slots are how the spike's finding survives into the contract: nodes
+sharing a slot occupy one logical position and the layout engine fans them apart, which is what
+keeps several versions of the same node aligned. The persistent segment tree uses
+`depth:lo:hi`, but layout never parses it — it only groups by equality. `origin` drives provenance
+colouring, so hue means "which version allocated this" without the renderer knowing what a
+version is.
 
 The original specification defines the renderer's ignorance but not who computes layout. Putting
 it in the plugin means every new algorithm reimplements tree layout. Putting it in the renderer

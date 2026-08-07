@@ -14,6 +14,7 @@ export type SimEvent =
   | { readonly kind: 'NodeAllocated'; readonly node: NodeId; readonly value: number; readonly label: string }
   | { readonly kind: 'PointerSet'; readonly from: NodeId; readonly slot: 'left' | 'right'; readonly to: NodeId }
   | { readonly kind: 'NodeReused'; readonly node: NodeId; readonly by: NodeId }
+  | { readonly kind: 'NodeVisited'; readonly node: NodeId }
   | { readonly kind: 'VersionCommitted'; readonly version: number; readonly root: NodeId };
 
 export interface SceneNode {
@@ -26,12 +27,15 @@ export interface SceneNode {
 export interface SceneState {
   readonly nodes: ReadonlyMap<NodeId, SceneNode>;
   readonly reuseCount: ReadonlyMap<NodeId, number>;
+  /** Times each node was touched by a traversal — the measured cost of an operation. */
+  readonly visits: ReadonlyMap<NodeId, number>;
   readonly roots: readonly NodeId[];
 }
 
 export const EMPTY_SCENE: SceneState = {
   nodes: new Map(),
   reuseCount: new Map(),
+  visits: new Map(),
   roots: [],
 };
 
@@ -54,6 +58,11 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
       const reuseCount = new Map(s.reuseCount);
       reuseCount.set(e.node, (reuseCount.get(e.node) ?? 0) + 1);
       return { ...s, reuseCount };
+    }
+    case 'NodeVisited': {
+      const visits = new Map(s.visits);
+      visits.set(e.node, (visits.get(e.node) ?? 0) + 1);
+      return { ...s, visits };
     }
     case 'VersionCommitted':
       return { ...s, roots: [...s.roots, e.root] };
@@ -108,6 +117,7 @@ export function fingerprint(s: SceneState): string {
   const nodes = [...s.nodes.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([id, n]) =>
-      `${id}=${n.value}${n.label}:${n.left ?? '_'},${n.right ?? '_'}x${s.reuseCount.get(id) ?? 0}`);
+      `${id}=${n.value}${n.label}:${n.left ?? '_'},${n.right ?? '_'}` +
+      `x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`);
   return `r[${s.roots.join(',')}] ${nodes.join(' ')}`;
 }

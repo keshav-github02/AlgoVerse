@@ -1,12 +1,12 @@
 {
-  "name": "@algoverse/core",
+  "name": "@algoverse/plugin-sdk",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
-  "scripts": {
-    "check": "node src/timeline.check.ts && node src/command.check.ts"
+  "dependencies": {
+    "@algoverse/core": "workspace:*"
   }
 }

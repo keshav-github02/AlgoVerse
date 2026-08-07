@@ -8,18 +8,23 @@ through every internal change, inspect memory, scrub the timeline, and compare v
 
 ## Status
 
-**Early development.** Phase 1 (persistent segment tree) is not yet implemented. The only
-runnable artifact today is a layout spike:
+**Early development.** The engine core and the first plugin work; there is no user interface yet.
+
+Working today: the event log and time travel, the spec-driven command parser, the plugin contract
+with its conformance kit, and a persistent segment tree that runs `build`, `update`, `query`, and
+`compare`.
 
 ```
-spike/segment-tree-visual/index.html
+pnpm install
+pnpm check
 ```
 
-Open it directly in a browser — it is a single self-contained file with no build step and no
-dependencies. It renders three versions of a persistent segment tree and shows which nodes each
-update allocates versus reuses.
+`pnpm check` type-checks the workspace and runs every package's property tests. Requires Node 22.6
+or newer — sources run directly as TypeScript, with no build step.
 
-There is no package to install yet. Setup instructions will land with the monorepo scaffold.
+There is also a self-contained layout prototype at `spike/segment-tree-visual/index.html`. Open it
+in a browser; it needs no install. It renders three versions of a persistent segment tree and shows
+which nodes each update allocates versus reuses.
 
 ## The core idea
 
@@ -40,13 +45,13 @@ sharing all fall out of the same mechanism instead of needing four separate impl
 
 Five packages, split along the seams that actually matter:
 
-| Package | Responsibility |
-| --- | --- |
-| `core` | Event types, event log, pure reducer, keyframes, playback clock, timeline, memory model, statistics, layout, seeded RNG |
-| `plugin-sdk` | The algorithm plugin contract, plus a conformance test kit every plugin runs |
-| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera, animation — nothing else |
-| `ui` | Reusable interface components |
-| `plugins/*` | One package per algorithm or data structure |
+| Package | Responsibility | State |
+| --- | --- | --- |
+| `core` | Event types, event log, pure reducer, keyframes, command parser, seeded RNG. Later: playback clock, layout | partial |
+| `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
+| `plugins/*` | One package per algorithm or data structure | segment tree working |
+| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera, animation — nothing else | not started |
+| `ui` | Reusable interface components | not started |
 
 Plus `apps/web`, the application shell.
 

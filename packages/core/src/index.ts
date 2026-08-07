@@ -10,6 +10,8 @@ export {
   type SimEvent,
 } from './timeline.ts';
 
+export { createRng, type Rng } from './rng.ts';
+
 export {
   complete,
   getInt,
