@@ -1,0 +1,31 @@
+export {
+  EMPTY_SCENE,
+  KEYFRAME_INTERVAL,
+  Timeline,
+  fingerprint,
+  reduce,
+  type NodeId,
+  type SceneNode,
+  type SceneState,
+  type SimEvent,
+} from './timeline.ts';
+
+export {
+  complete,
+  getInt,
+  getIntList,
+  getVersion,
+  help,
+  paramSyntax,
+  parseCommand,
+  usage,
+  type ArgValue,
+  type CommandSpec,
+  type Completion,
+  type ErrorCode,
+  type OperationError,
+  type ParamKind,
+  type ParamSpec,
+  type ParsedCommand,
+  type ParseResult,
+} from './command.ts';

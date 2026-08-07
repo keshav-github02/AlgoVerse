@@ -231,13 +231,22 @@ Three requirements, all cheap now:
 Operations return errors, they do not throw them.
 
 ```ts
+type ErrorCode =
+  // owned by the parser — syntax only
+  | 'PARSE_ERROR' | 'UNKNOWN_COMMAND' | 'BAD_ARITY' | 'BAD_ARGUMENT'
+  // owned by the plugin — semantics, at execution time
+  | 'UNKNOWN_VERSION' | 'INDEX_OUT_OF_RANGE' | 'INVALID_RANGE';
+
 interface OperationError {
-  code: 'UNKNOWN_VERSION' | 'INDEX_OUT_OF_RANGE' | 'BAD_ARITY' | 'PARSE_ERROR' | 'INVALID_RANGE';
+  code: ErrorCode;
   message: string;                        // shown to the user
-  span?: [number, number];                // character range in the console input
+  span?: readonly [number, number];       // character range in the console input
   hint?: string;                          // "versions available: v0, v1, v2"
 }
 ```
+
+The split matters: the parser validates that `v9` is *shaped* like a version reference, and the
+plugin decides whether version 9 *exists*. Only the plugin knows how many versions there are.
 
 `query v9 2 5` against three versions should point at `v9` and say what exists. Typed codes make
 that testable; string throws do not.
