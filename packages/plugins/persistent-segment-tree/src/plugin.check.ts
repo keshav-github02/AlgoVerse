@@ -4,7 +4,7 @@
  *     node packages/plugins/persistent-segment-tree/src/plugin.check.ts
  */
 
-import { createRng, help, parseCommand, type OperationError } from '@algoverse/core';
+import { createRng, help, layout, parseCommand, type OperationError } from '@algoverse/core';
 import { ZERO_STATS, addStats, runConformance, type PluginInstance, type Statistics } from '@algoverse/plugin-sdk';
 import { persistentSegmentTree as plugin } from './plugin.ts';
 
@@ -62,6 +62,29 @@ check('slots align versions of the same range',
 check('compare reports 11 shared nodes',
   (run(inst, 'compare v0 v1').value as { shared: number }).shared === 11,
   JSON.stringify(run(inst, 'compare v0 v1').value));
+
+/* ── 2b. Layout consumes the real structure ────────────────────────── */
+
+console.log('\nlayout');
+
+const scene = layout(structure);
+check('every node is placed', scene.nodes.length === structure.nodes.length);
+check('every edge is placed', scene.edges.length === structure.edges.length);
+check('no two nodes overlap on a row', (() => {
+  const rows = new Map<number, { x: number; width: number }[]>();
+  for (const n of scene.nodes) rows.set(n.y, [...(rows.get(n.y) ?? []), { x: n.x, width: n.width }]);
+  for (const row of rows.values()) {
+    const sorted = [...row].sort((a, b) => a.x - b.x);
+    for (let i = 1; i < sorted.length; i += 1) {
+      const a = sorted[i - 1] as { x: number; width: number };
+      const b = sorted[i] as { x: number; width: number };
+      if (b.x - a.x < (a.width + b.width) / 2) return false;
+    }
+  }
+  return true;
+})(), `${Math.round(scene.width)} x ${Math.round(scene.height)} px`);
+check('reused pointers survive into the positioned scene',
+  scene.edges.filter((e) => e.reused).length === structure.edges.filter((e) => e.reused).length);
 
 /* ── 3. Errors are returned with useful hints ──────────────────────── */
 

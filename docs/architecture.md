@@ -201,6 +201,36 @@ The original specification defines the renderer's ignorance but not who computes
 it in the plugin means every new algorithm reimplements tree layout. Putting it in the renderer
 means the renderer needs structural knowledge it is supposed to lack. It belongs between them.
 
+### Layout
+
+Leaf slots take their *x* from a depth-first walk of the roots and are laid down left to right,
+each consuming exactly the width its own fan needs. Parents then centre over their children, and a
+per-depth separation pass pushes apart anything centring pulled together. *y* comes straight from
+`StructureNode.depth`.
+
+Child order comes from a **natural sort of the pointer name**, so `c2` precedes `c10`. Alphabetical
+ordering would have shuffled a B-tree's children.
+
+**The version-window question is settled: no cap, no separate diff view.** The prototype worried
+that the widest fanned slot would set the canvas width and blow up as versions accumulated. With
+per-slot widths it does not, because an update only touches `log n` slots — most slots never fan at
+all. Width comes out at roughly `(n + versions) x 66 + n x 26` pixels:
+
+| Elements | Versions | Nodes | Width |
+| --- | --- | --- | --- |
+| 8 | 3 | 23 | 858 px |
+| 8 | 8 | 43 | 1188 px |
+| 16 | 16 | 106 | 2388 px |
+| 32 | 16 | 153 | 3732 px |
+| 64 | 32 | 344 | 7476 px |
+
+Linear in both, with no overlap at any size — verified rather than reasoned. Sixty-four elements
+across thirty-two versions is wide enough to need panning, but that is a camera concern, not a
+correctness one, and the earlier plan to cap displayed versions can be dropped.
+
+`force` is a placeholder: deterministic ring placement with no relaxation. It must be replaced
+before the graph phase.
+
 ### Rendering
 
 SVG for Phase 1, behind a `Renderer` interface. Good to roughly 1–2k elements, inspectable in
@@ -359,11 +389,7 @@ unchanged after both updates.
 
 ## 13. Open questions
 
-- **Version window.** Layout places *y* by depth and *x* by range midpoint, so version copies of
-  the same range share a slot and fan apart. The widest fanned slot sets the canvas width, not
-  the tree. Three versions over eight elements fits at roughly 1200 px; eight versions over
-  sixteen will not. Resolve with slot-aware column widths, a hard cap on simultaneously displayed
-  versions, or a dedicated diff view — decide before `core/layout` is written.
+- ~~**Version window.**~~ **Resolved — no cap is needed.** See [Layout](#layout) below.
 - **Keyframe interval.** `K = 50` is a guess. Measure once real logs exist.
 - **View modes.** `single | diff | union` is the current model. Whether `diff` is a distinct
   layout or a filter over `union` is unresolved.

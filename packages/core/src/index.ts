@@ -12,6 +12,19 @@ export {
 
 export { createRng, type Rng } from './rng.ts';
 
+export type {
+  LayoutHint, StructureEdge, StructureGraph, StructureNode,
+} from './structure.ts';
+
+export {
+  DEFAULT_LAYOUT,
+  layout,
+  type LayoutOptions,
+  type PositionedEdge,
+  type PositionedNode,
+  type PositionedScene,
+} from './layout.ts';
+
 export {
   complete,
   getInt,

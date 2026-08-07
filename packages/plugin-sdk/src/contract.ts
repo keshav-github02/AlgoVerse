@@ -10,7 +10,8 @@
  */
 
 import type {
-  CommandSpec, NodeId, OperationError, ParsedCommand, Rng, SimEvent,
+  CommandSpec, LayoutHint, OperationError, ParsedCommand, Rng, SimEvent,
+  StructureEdge, StructureGraph, StructureNode,
 } from '@algoverse/core';
 
 export interface PluginMeta {
@@ -54,38 +55,12 @@ export function addStats(base: Statistics, delta: Partial<Statistics>): Statisti
   };
 }
 
-export type LayoutHint = 'tree' | 'dag' | 'force' | 'linear' | 'grid';
-
-export interface StructureNode {
-  readonly id: NodeId;
-  readonly label: string;
-  readonly value: number;
-  readonly role: string;
-  readonly depth: number;
-  /**
-   * Layout grouping key. Nodes sharing a slot occupy one logical position and
-   * are fanned apart by the layout engine. For a persistent structure this is
-   * how several versions of the same node stay aligned.
-   */
-  readonly slot: string;
-  /** Which version allocated this node. Drives provenance colouring. */
-  readonly origin: number;
-}
-
-export interface StructureEdge {
-  readonly from: NodeId;
-  readonly to: NodeId;
-  readonly slot: string;
-  /** True when the child predates the parent — a pointer into reused memory. */
-  readonly reused: boolean;
-}
-
-export interface StructureGraph {
-  readonly layout: LayoutHint;
-  readonly nodes: readonly StructureNode[];
-  readonly edges: readonly StructureEdge[];
-  readonly roots: readonly NodeId[];
-}
+/**
+ * The structure types live in core, because layout and the renderer consume
+ * them and neither may depend on this package. Re-exported so plugins have a
+ * single import.
+ */
+export type { LayoutHint, StructureEdge, StructureGraph, StructureNode };
 
 export interface SerializedState {
   readonly schemaVersion: number;

@@ -47,7 +47,7 @@ Five packages, split along the seams that actually matter:
 
 | Package | Responsibility | State |
 | --- | --- | --- |
-| `core` | Event types, event log, pure reducer, keyframes, command parser, seeded RNG. Later: playback clock, layout | partial |
+| `core` | Event types, event log, pure reducer, keyframes, command parser, layout, seeded RNG. Later: playback clock | partial |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
 | `plugins/*` | One package per algorithm or data structure | segment tree + stack |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera, animation — nothing else | not started |

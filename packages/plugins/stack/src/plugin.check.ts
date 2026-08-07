@@ -4,7 +4,7 @@
  *     node packages/plugins/stack/src/plugin.check.ts
  */
 
-import { createRng, help, parseCommand, type OperationError } from '@algoverse/core';
+import { createRng, help, layout, parseCommand, type OperationError } from '@algoverse/core';
 import { runConformance, type PluginInstance } from '@algoverse/plugin-sdk';
 import { stack as plugin } from './plugin.ts';
 
@@ -77,6 +77,26 @@ check('emptying completely leaves no roots',
   (() => { run(shrink, 'pop'); run(shrink, 'pop');
     const s = shrink.getStructure();
     return s.nodes.length === 0 && s.roots.length === 0 && s.edges.length === 0; })());
+
+/* ── 3b. Layout consumes the real structure ────────────────────────── */
+
+console.log('\nlayout');
+
+const laid = fresh();
+for (const line of ['push 1', 'push 2', 'push 3']) run(laid, line);
+const scene = layout(laid.getStructure());
+check('the stack lays out as a single column',
+  new Set(scene.nodes.map((n) => n.x)).size === 1,
+  `${Math.round(scene.width)} x ${Math.round(scene.height)} px`);
+check('the most recent push is drawn on top', (() => {
+  const top = scene.nodes.find((n) => n.node.role === 'top');
+  return top !== undefined && top.node.value === 3 && scene.nodes.every((n) => n.y >= top.y);
+})());
+check('an emptied stack lays out cleanly', (() => {
+  for (let i = 0; i < 3; i += 1) run(laid, 'pop');
+  const s = layout(laid.getStructure());
+  return s.nodes.length === 0 && s.edges.length === 0 && s.width > 0;
+})());
 
 /* ── 4. Property test against a real array ─────────────────────────── */
 
