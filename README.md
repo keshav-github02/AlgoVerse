@@ -16,15 +16,19 @@ with its conformance kit, a persistent segment tree that runs `build`, `update`,
 
 ```
 pnpm install
-pnpm check
+pnpm check          # type-check, then every package's property tests
+pnpm demo           # render real plugin output to demo/index.html
 ```
 
-`pnpm check` type-checks the workspace and runs every package's property tests. Requires Node 22.6
-or newer — sources run directly as TypeScript, with no build step.
+Requires Node 22.6 or newer. Sources run directly as TypeScript, with no build step.
 
-There is also a self-contained layout prototype at `spike/segment-tree-visual/index.html`. Open it
-in a browser; it needs no install. It renders three versions of a persistent segment tree and shows
-which nodes each update allocates versus reuses.
+`pnpm demo` drives the real engine end to end — parse, execute, file events, replay, lay out,
+render — and writes a scrubbable page. Open `demo/index.html` in a browser and step through every
+event, or jump operation by operation. Each frame is reconstructed from the event log, not read out
+of the plugin.
+
+There is also a self-contained layout prototype at `spike/segment-tree-visual/index.html`, kept for
+comparison. It predates the engine and hardcodes its data.
 
 ## The core idea
 
@@ -47,10 +51,10 @@ Five packages, split along the seams that actually matter:
 
 | Package | Responsibility | State |
 | --- | --- | --- |
-| `core` | Event types, event log, pure reducer, keyframes, command parser, layout, seeded RNG. Later: playback clock | partial |
+| `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
 | `plugins/*` | One package per algorithm or data structure | segment tree + stack |
-| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera, animation — nothing else | not started |
+| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera — nothing else | SVG working |
 | `ui` | Reusable interface components | not started |
 
 Plus `apps/web`, the application shell.

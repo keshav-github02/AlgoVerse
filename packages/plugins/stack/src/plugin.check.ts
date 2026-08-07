@@ -84,12 +84,15 @@ console.log('\nlayout');
 
 const laid = fresh();
 for (const line of ['push 1', 'push 2', 'push 3']) run(laid, line);
-const scene = layout(laid.getStructure());
+const struct = laid.getStructure();
+const scene = layout(struct);
 check('the stack lays out as a single column',
   new Set(scene.nodes.map((n) => n.x)).size === 1,
   `${Math.round(scene.width)} x ${Math.round(scene.height)} px`);
+// Being on top is being the root, not a role — which cell is on top changes
+// with every push, and a node's role is fixed when it is allocated.
 check('the most recent push is drawn on top', (() => {
-  const top = scene.nodes.find((n) => n.node.role === 'top');
+  const top = scene.nodes.find((n) => n.node.id === struct.roots[0]);
   return top !== undefined && top.node.value === 3 && scene.nodes.every((n) => n.y >= top.y);
 })());
 check('an emptied stack lays out cleanly', (() => {

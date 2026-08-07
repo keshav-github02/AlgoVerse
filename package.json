@@ -9,7 +9,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "check": "pnpm typecheck && pnpm -r --sequential check"
+    "check": "pnpm typecheck && pnpm -r --sequential check",
+    "demo": "pnpm --filter @algoverse/renderer demo"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

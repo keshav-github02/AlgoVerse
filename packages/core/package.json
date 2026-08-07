@@ -7,6 +7,6 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "check": "node src/timeline.check.ts && node src/command.check.ts && node src/layout.check.ts"
+    "check": "node src/timeline.check.ts && node src/command.check.ts && node src/layout.check.ts && node src/playback.check.ts"
   }
 }

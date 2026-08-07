@@ -41,6 +41,18 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/renderer:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../core
+      '@algoverse/plugin-persistent-segment-tree':
+        specifier: workspace:*
+        version: link:../plugins/persistent-segment-tree
+      '@algoverse/plugin-stack':
+        specifier: workspace:*
+        version: link:../plugins/stack
+
 packages:
 
   '@types/node@22.20.1':

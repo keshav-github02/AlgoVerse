@@ -6,7 +6,7 @@
  */
 
 import {
-  Timeline, createRng, parseCommand,
+  Timeline, createRng, parseCommand, sceneToStructure,
   type CommandSpec, type NodeId, type SimEvent,
 } from '@algoverse/core';
 import type { AlgorithmPlugin, PluginInstance, StructureGraph } from './contract.ts';
@@ -53,44 +53,38 @@ function runScript(
 function logDescribesStructure(events: readonly SimEvent[], structure: StructureGraph): string | null {
   const tl = new Timeline();
   tl.append(events);
-  const scene = tl.stateAt(tl.length);
+  const derived = sceneToStructure(tl.stateAt(tl.length), structure.layout);
 
-  const fromLog = [...scene.nodes.keys()].sort((a, b) => a - b);
-  const fromPlugin = [...structure.nodes].map((n) => n.id).sort((a, b) => a - b);
-  if (fromLog.length !== fromPlugin.length) {
-    return `log has ${fromLog.length} nodes, structure reports ${fromPlugin.length}`;
-  }
-  for (let i = 0; i < fromLog.length; i += 1) {
-    if (fromLog[i] !== fromPlugin[i]) return `node id sets differ at ${String(fromLog[i])}`;
+  if (derived.nodes.length !== structure.nodes.length) {
+    return `log yields ${derived.nodes.length} nodes, structure reports ${structure.nodes.length}`;
   }
 
+  const byId = new Map(derived.nodes.map((n) => [n.id, n]));
   for (const n of structure.nodes) {
-    const s = scene.nodes.get(n.id);
-    if (s === undefined) return `node ${String(n.id)} missing from replayed log`;
-    if (s.value !== n.value) return `node ${String(n.id)} value ${s.value} in log, ${n.value} in structure`;
-    if (s.label !== n.label) return `node ${String(n.id)} label "${s.label}" in log, "${n.label}" in structure`;
-  }
-
-  const edgesByParent = new Map<NodeId, Map<string, NodeId>>();
-  for (const e of structure.edges) {
-    const slots = edgesByParent.get(e.from) ?? new Map<string, NodeId>();
-    slots.set(e.slot, e.to);
-    edgesByParent.set(e.from, slots);
-  }
-  for (const [id, s] of scene.nodes) {
-    const actual = edgesByParent.get(id) ?? new Map<string, NodeId>();
-    if (actual.size !== s.children.size) {
-      return `node ${String(id)} has ${s.children.size} children in the log, ${actual.size} in the structure`;
-    }
-    for (const [slot, child] of s.children) {
-      if (actual.get(slot) !== child) {
-        return `node ${String(id)} slot "${slot}" differs between log and structure`;
+    const d = byId.get(n.id);
+    if (d === undefined) return `node ${String(n.id)} missing from replayed log`;
+    // Every drawable field, not just the obvious two: a slot or origin that
+    // disagrees puts the node in the wrong place or the wrong colour.
+    for (const field of ['label', 'value', 'role', 'depth', 'slot', 'origin'] as const) {
+      if (d[field] !== n[field]) {
+        return `node ${String(n.id)} ${field}: log says ${String(d[field])}, structure says ${String(n[field])}`;
       }
     }
   }
 
-  if (String(scene.roots) !== String(structure.roots)) {
-    return `roots differ: log [${scene.roots.join(',')}] vs structure [${structure.roots.join(',')}]`;
+  const key = (e: { from: NodeId; to: NodeId; slot: string; reused: boolean }): string =>
+    `${e.from}-${e.slot}->${e.to}${e.reused ? '*' : ''}`;
+  const fromLog = new Set(derived.edges.map(key));
+  const fromPlugin = new Set(structure.edges.map(key));
+  if (fromLog.size !== fromPlugin.size) {
+    return `log yields ${fromLog.size} edges, structure reports ${fromPlugin.size}`;
+  }
+  for (const k of fromPlugin) {
+    if (!fromLog.has(k)) return `edge ${k} is in the structure but not the log`;
+  }
+
+  if (String(derived.roots) !== String(structure.roots)) {
+    return `roots differ: log [${derived.roots.join(',')}] vs structure [${structure.roots.join(',')}]`;
   }
   return null;
 }

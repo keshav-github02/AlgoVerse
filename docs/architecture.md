@@ -67,14 +67,48 @@ This one mechanism delivers step-back, timeline scrubbing, replay, save/load, an
 comparison. Any feature that seems to need its own state history is a sign something bypassed
 the log.
 
+### Drawing from the log
+
+`sceneToStructure` turns a replayed `SceneState` into the same `StructureGraph` a plugin reports.
+That is the join that makes the central claim true: scrub to step 40 and the picture is what the
+structure *was* at step 40, reconstructed rather than remembered. Nothing asks the plugin.
+
+For this to work the log has to be self-sufficient, so `NodeAllocated` carries `role`, `depth`,
+`slot` and `origin` alongside the value and label. Anything the picture needs that the log does not
+carry is a place where replay silently falls back on present-day state.
+
+The conformance kit compares the derived graph against `getStructure()` field by field — a `slot`
+that disagrees puts a node in the wrong place, an `origin` that disagrees gives it the wrong colour.
+
+### Layout is computed once, not per frame
+
+Playback lays out the **union of every node that ever exists**, then draws each frame as a subset of
+those fixed positions.
+
+Laying out each frame independently would be the obvious approach and it is wrong: surviving nodes
+would slide sideways every time a neighbour appeared, so the picture would read as churn rather than
+as an algorithm running. The union is not the final state either — a structure that deletes nodes
+(the stack) has a union strictly larger than anything visible at once.
+
+### Playback
+
+`Playback` owns a position in the log and nothing else. **There is no timer inside it**: the host
+calls `tick(deltaMs)` from its own animation loop. That keeps playback deterministic and testable,
+and it is what actually enforces the separation between algorithm time and wall-clock time.
+
+Fractional time accumulates across ticks, so a slow speed still advances instead of rounding to zero
+every frame. Playback pauses at the end rather than looping.
+
 ### Step granularity
+
+`Timeline.append(events, label)` records a **mark** at each operation boundary, labelled with the
+console line that produced it. Coarse stepping (`nextMark`/`prevMark`) moves operation by operation;
+fine stepping moves event by event. This replaces the earlier plan to tag every event with a
+granularity level — the boundary is a property of the operation, not of its individual events, so
+recording it once per `append` is both cheaper and harder to get wrong.
 
 A single `update` on a persistent segment tree is one logical operation, roughly a dozen
 primitive events. Users want both readings: "run the whole update" and "descend one node."
-
-Every event carries a `granularity` tag, and the playback engine filters by it. Stepping at
-`coarse` advances to the next operation boundary; `fine` advances one event. This is trivial to
-add now and a schema migration later.
 
 ---
 

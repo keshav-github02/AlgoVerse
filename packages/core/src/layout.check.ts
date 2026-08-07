@@ -82,8 +82,7 @@ function stackGraph(size: number): StructureGraph {
   const edges: StructureEdge[] = [];
   for (let i = 0; i < size; i += 1) {
     nodes.push({
-      id: i as NodeId, label: `s${i}`, value: i,
-      role: i === size - 1 ? 'top' : 'element',
+      id: i as NodeId, label: `s${i}`, value: i, role: 'cell',
       depth: i, slot: `pos:${i}`, origin: 0,
     });
     if (i > 0) edges.push({ from: i as NodeId, to: (i - 1) as NodeId, slot: 'below', reused: false });
@@ -213,7 +212,8 @@ console.log('\nlinear');
 const stack = layout(stackGraph(4));
 check('a stack is one column', new Set(stack.nodes.map((n) => n.x)).size === 1);
 check('the top of the stack is drawn highest', (() => {
-  const top = stack.nodes.find((n) => n.node.role === 'top');
+  const rootId = stackGraph(4).roots[0];
+  const top = stack.nodes.find((n) => n.node.id === rootId);
   return top !== undefined && stack.nodes.every((n) => n.y >= top.y);
 })());
 check('an empty structure still produces valid bounds', (() => {

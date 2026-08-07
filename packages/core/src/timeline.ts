@@ -11,7 +11,21 @@
 export type NodeId = number & { readonly __brand: unique symbol };
 
 export type SimEvent =
-  | { readonly kind: 'NodeAllocated'; readonly node: NodeId; readonly value: number; readonly label: string }
+  /**
+   * Carries everything needed to draw the node. The log has to be sufficient
+   * on its own — if the picture needed to ask the plugin for anything, replay
+   * would not be a faithful reconstruction.
+   */
+  | {
+      readonly kind: 'NodeAllocated';
+      readonly node: NodeId;
+      readonly value: number;
+      readonly label: string;
+      readonly role: string;
+      readonly depth: number;
+      readonly slot: string;
+      readonly origin: number;
+    }
   | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
   /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
   | { readonly kind: 'PointerSet'; readonly from: NodeId; readonly slot: string; readonly to: NodeId | null }
@@ -25,6 +39,10 @@ export type SimEvent =
 export interface SceneNode {
   readonly value: number;
   readonly label: string;
+  readonly role: string;
+  readonly depth: number;
+  readonly slot: string;
+  readonly origin: number;
   /** Keyed by slot name, so a node may have two children or twenty. */
   readonly children: ReadonlyMap<string, NodeId>;
 }
@@ -53,7 +71,11 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
   switch (e.kind) {
     case 'NodeAllocated': {
       const nodes = new Map(s.nodes);
-      nodes.set(e.node, { value: e.value, label: e.label, children: new Map() });
+      nodes.set(e.node, {
+        value: e.value, label: e.label, role: e.role,
+        depth: e.depth, slot: e.slot, origin: e.origin,
+        children: new Map(),
+      });
       return { ...s, nodes };
     }
     case 'NodeDeleted': {
@@ -96,12 +118,20 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
 /** Snapshot every Nth step, so scrubbing replays at most this many events. */
 export const KEYFRAME_INTERVAL = 8;
 
+/** Where one operation ends, so playback can step coarsely as well as finely. */
+export interface Mark {
+  readonly index: number;
+  readonly label: string;
+}
+
 export class Timeline {
   readonly #log: SimEvent[] = [];
   readonly #keyframes = new Map<number, SceneState>([[0, EMPTY_SCENE]]);
+  readonly #marks: Mark[] = [];
   #cursor: SceneState = EMPTY_SCENE;
 
-  append(events: readonly SimEvent[]): void {
+  /** One call per operation. `label` is what the console typed. */
+  append(events: readonly SimEvent[], label?: string): void {
     for (const e of events) {
       this.#log.push(e);
       this.#cursor = reduce(this.#cursor, e);
@@ -109,10 +139,17 @@ export class Timeline {
         this.#keyframes.set(this.#log.length, this.#cursor);
       }
     }
+    if (label !== undefined && events.length > 0) {
+      this.#marks.push({ index: this.#log.length, label });
+    }
   }
 
   get length(): number {
     return this.#log.length;
+  }
+
+  get marks(): readonly Mark[] {
+    return this.#marks;
   }
 
   eventAt(step: number): SimEvent | undefined {
@@ -141,7 +178,8 @@ export function fingerprint(s: SceneState): string {
         .sort((a, b) => (a[0] < b[0] ? -1 : 1))
         .map(([slot, child]) => `${slot}>${child}`)
         .join(',');
-      return `${id}=${n.value}${n.label}{${kids}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
+      return `${id}=${n.value}${n.label}@${n.slot}#${n.origin}` +
+        `{${kids}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
     });
   return `r[${s.roots.join(',')}] h[${s.versions.join(',')}] ${nodes.join(' ')}`;
 }

@@ -117,6 +117,14 @@ class Instance implements PluginInstance {
     return hi - lo === 1 ? `i${lo}` : `[${lo},${hi})`;
   }
 
+  /**
+   * Nodes covering the same range at the same depth share a slot, so the
+   * layout engine aligns versions and fans them apart.
+   */
+  #slot(lo: number, hi: number, depth: number): string {
+    return `${depth}:${lo}:${hi}`;
+  }
+
   #alloc(
     lo: number, hi: number, value: number, left: NodeId | null, right: NodeId | null,
     origin: number, depth: number, events: SimEvent[],
@@ -125,7 +133,16 @@ class Instance implements PluginInstance {
     this.#next += 1;
     const node: Node = { id, lo, hi, value, left, right, origin, depth };
     this.#nodes.set(id, node);
-    events.push({ kind: 'NodeAllocated', node: id, value, label: this.#span(lo, hi) });
+    events.push({
+      kind: 'NodeAllocated',
+      node: id,
+      value,
+      label: this.#span(lo, hi),
+      role: hi - lo === 1 ? 'leaf' : 'internal',
+      depth,
+      slot: this.#slot(lo, hi, depth),
+      origin,
+    });
     if (left !== null) events.push({ kind: 'PointerSet', from: id, slot: 'left', to: left });
     if (right !== null) events.push({ kind: 'PointerSet', from: id, slot: 'right', to: right });
     return node;
@@ -286,9 +303,7 @@ class Instance implements PluginInstance {
         value: n.value,
         role: n.hi - n.lo === 1 ? 'leaf' : 'internal',
         depth: n.depth,
-        // Nodes covering the same range at the same depth share a slot, so the
-        // layout engine can align versions and fan them apart.
-        slot: `${n.depth}:${n.lo}:${n.hi}`,
+        slot: this.#slot(n.lo, n.hi, n.depth),
         origin: n.origin,
       });
       for (const [slot, child] of [['left', n.left], ['right', n.right]] as const) {

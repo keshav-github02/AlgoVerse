@@ -4,11 +4,16 @@ export {
   Timeline,
   fingerprint,
   reduce,
+  type Mark,
   type NodeId,
   type SceneNode,
   type SceneState,
   type SimEvent,
 } from './timeline.ts';
+
+export { sceneToStructure } from './scene.ts';
+
+export { BASE_RATE, Playback } from './playback.ts';
 
 export { createRng, type Rng } from './rng.ts';
 

@@ -77,8 +77,20 @@ class Instance implements PluginInstance {
     const below = this.#top();
     const id = this.#next as NodeId;
     this.#next += 1;
+    const depth = this.#cells.length;
     const events: SimEvent[] = [
-      { kind: 'NodeAllocated', node: id, value, label: `s${this.#cells.length}` },
+      {
+        kind: 'NodeAllocated',
+        node: id,
+        value,
+        label: `s${depth}`,
+        // Not "top": which cell is on top changes with every push, and a node's
+        // role is fixed at allocation. Being the top is being the root.
+        role: 'cell',
+        depth,
+        slot: `pos:${depth}`,
+        origin: 0,
+      },
     ];
     // A stack cell points down, not left and right. The slot name is the
     // plugin's own vocabulary; nothing in core interprets it.
@@ -130,7 +142,7 @@ class Instance implements PluginInstance {
       id: c.id,
       label: `s${i}`,
       value: c.value,
-      role: i === this.#cells.length - 1 ? 'top' : 'element',
+      role: 'cell',
       depth: i,
       // One cell per position, so slots never collide. No fanning to do.
       slot: `pos:${i}`,

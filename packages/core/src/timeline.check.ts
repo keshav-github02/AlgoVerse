@@ -16,57 +16,62 @@ import {
 /* ── Fixture: persistent segment tree, emitting events ─────────────── */
 
 interface Fix { readonly id: NodeId; readonly lo: number; readonly hi: number;
-                readonly val: number; readonly left: Fix | null; readonly right: Fix | null }
+                readonly depth: number; readonly val: number;
+                readonly left: Fix | null; readonly right: Fix | null }
 
 function segmentTreeLog(arr: readonly number[]): readonly SimEvent[] {
   const events: SimEvent[] = [];
   let next = 0;
 
-  const alloc = (value: number, label: string): NodeId => {
+  const span = (lo: number, hi: number): string => (hi - lo === 1 ? `i${lo}` : `[${lo},${hi})`);
+  const alloc = (value: number, lo: number, hi: number, depth: number, origin: number): NodeId => {
     const id = next++ as NodeId;
-    events.push({ kind: 'NodeAllocated', node: id, value, label });
+    events.push({
+      kind: 'NodeAllocated', node: id, value, label: span(lo, hi),
+      role: hi - lo === 1 ? 'leaf' : 'internal', depth, slot: `${depth}:${lo}:${hi}`, origin,
+    });
     return id;
   };
   const point = (from: NodeId, slot: 'left' | 'right', to: NodeId): void => {
     events.push({ kind: 'PointerSet', from, slot, to });
   };
-  const span = (lo: number, hi: number): string => (hi - lo === 1 ? `i${lo}` : `[${lo},${hi})`);
 
-  const build = (lo: number, hi: number): Fix => {
+  const build = (lo: number, hi: number, depth: number): Fix => {
     if (hi - lo === 1) {
       const val = arr[lo] as number;
-      return { id: alloc(val, span(lo, hi)), lo, hi, val, left: null, right: null };
+      return { id: alloc(val, lo, hi, depth, 0), lo, hi, depth, val, left: null, right: null };
     }
     const mid = (lo + hi) >> 1;
-    const left = build(lo, mid);
-    const right = build(mid, hi);
+    const left = build(lo, mid, depth + 1);
+    const right = build(mid, hi, depth + 1);
     const val = left.val + right.val;
-    const id = alloc(val, span(lo, hi));
+    const id = alloc(val, lo, hi, depth, 0);
     point(id, 'left', left.id);
     point(id, 'right', right.id);
-    return { id, lo, hi, val, left, right };
+    return { id, lo, hi, depth, val, left, right };
   };
 
-  const update = (n: Fix, idx: number, v: number): Fix => {
+  const update = (n: Fix, idx: number, v: number, origin: number): Fix => {
     if (n.hi - n.lo === 1) {
-      return { id: alloc(v, span(n.lo, n.hi)), lo: n.lo, hi: n.hi, val: v, left: null, right: null };
+      return { id: alloc(v, n.lo, n.hi, n.depth, origin), lo: n.lo, hi: n.hi, depth: n.depth,
+               val: v, left: null, right: null };
     }
     const goLeft = idx < ((n.lo + n.hi) >> 1);
-    const left = goLeft ? update(n.left as Fix, idx, v) : (n.left as Fix);
-    const right = goLeft ? (n.right as Fix) : update(n.right as Fix, idx, v);
+    const left = goLeft ? update(n.left as Fix, idx, v, origin) : (n.left as Fix);
+    const right = goLeft ? (n.right as Fix) : update(n.right as Fix, idx, v, origin);
     const val = left.val + right.val;
-    const id = alloc(val, span(n.lo, n.hi));
+    const id = alloc(val, n.lo, n.hi, n.depth, origin);
     point(id, 'left', left.id);
     point(id, 'right', right.id);
     events.push({ kind: 'NodeReused', node: goLeft ? right.id : left.id, by: id });
-    return { id, lo: n.lo, hi: n.hi, val, left, right };
+    return { id, lo: n.lo, hi: n.hi, depth: n.depth, val, left, right };
   };
 
-  const v0 = build(0, arr.length);
+  const v0 = build(0, arr.length, 0);
   events.push({ kind: 'VersionCommitted', version: 0, root: v0.id });
-  const v1 = update(v0, 3, 10);
+  const v1 = update(v0, 3, 10, 1);
   events.push({ kind: 'VersionCommitted', version: 1, root: v1.id });
-  const v2 = update(v1, 6, 7);
+  const v2 = update(v1, 6, 7, 2);
   events.push({ kind: 'VersionCommitted', version: 2, root: v2.id });
   return events;
 }
