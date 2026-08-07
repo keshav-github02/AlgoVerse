@@ -113,14 +113,16 @@ const readAll = (root: NodeId): number[] => {
   const walk = (id: NodeId): void => {
     const n = final.nodes.get(id);
     if (n === undefined) return;
-    if (n.left === null && n.right === null) { out.push(n.value); return; }
-    if (n.left !== null) walk(n.left);
-    if (n.right !== null) walk(n.right);
+    if (n.children.size === 0) { out.push(n.value); return; }
+    for (const slot of ['left', 'right']) {
+      const child = n.children.get(slot);
+      if (child !== undefined) walk(child);
+    }
   };
   walk(root);
   return out;
 };
-const [r0, r1, r2] = final.roots as readonly NodeId[];
+const [r0, r1, r2] = final.versions;
 check('v0 unchanged by later updates', String(readAll(r0 as NodeId)) === String(ARR),
   `[${readAll(r0 as NodeId)}]`);
 check('v1 sees update 3 -> 10', String(readAll(r1 as NodeId)) === String([3, 1, 4, 10, 5, 9, 2, 6]));

@@ -130,9 +130,31 @@ algorithm knowledge, and the leak simply moves.
 
 ### The two-plugin rule
 
-Phase 1 ships the persistent segment tree **and** a deliberately trivial second plugin (a plain
-array or a stack). One plugin reveals zero abstraction leaks — every accidental assumption still
-looks like the contract. Two reveal most of them, cheaply.
+Phase 1 ships the persistent segment tree **and** a deliberately trivial second plugin. One plugin
+reveals zero abstraction leaks — every accidental assumption still looks like the contract. Two
+reveal most of them, cheaply.
+
+The second plugin is a **stack**: no versions, no tree, no ranges, and it *deletes* nodes. It was
+written after the segment tree and immediately found four leaks, all of which would have blocked
+later phases:
+
+| Leak | Why it mattered | Fix |
+| --- | --- | --- |
+| `PointerSet.slot` was `'left' \| 'right'` | Binary-tree-shaped. A stack cell points *below*; a B-tree node has many children | Slots are plugin-defined strings, and `SceneNode.children` is a map keyed by slot instead of `left`/`right` fields |
+| No way to remove a node | `pop` had nothing to emit, so the replayed log kept nodes the structure had dropped | Added a `NodeDeleted` event |
+| `roots` only ever grew | `VersionCommitted` appended, which suits version history but not a stack whose top moves | Split them: `RootsSet` replaces the current entry points, `VersionCommitted` appends to `versions` |
+| No error code for "not in a valid state" | Popping an empty stack fits none of the segment tree's codes | Added `PRECONDITION_FAILED` |
+
+A fifth problem was in the conformance kit rather than the contract: its bad-semantics probe only
+examines commands declaring a `version` parameter, so against a stack it examined nothing and
+reported a pass. It now reports **skipped**, which is the truth.
+
+Two residual compromises, both recorded rather than fixed:
+
+- `StructureNode.origin` names the version that allocated a node. A structure without history sets
+  it to `0` for everything. Harmless, but it is history vocabulary in a general interface.
+- `Statistics` is a fixed set of counters. A stack leaves `versions` at zero and reads `updates` as
+  "pushes and pops". This holds for now; plugin-declared statistics are the eventual fix.
 
 `plugin-sdk` exports a conformance kit. It is handed a plugin and a script of command strings and
 derives the rest — it names no command. Fourteen checks cover metadata, spec well-formedness,

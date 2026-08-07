@@ -36,7 +36,9 @@ export type ErrorCode =
   | 'BAD_ARGUMENT'
   | 'UNKNOWN_VERSION'
   | 'INDEX_OUT_OF_RANGE'
-  | 'INVALID_RANGE';
+  | 'INVALID_RANGE'
+  /** The structure is not in a state where this operation makes sense. */
+  | 'PRECONDITION_FAILED';
 
 export interface OperationError {
   readonly code: ErrorCode;

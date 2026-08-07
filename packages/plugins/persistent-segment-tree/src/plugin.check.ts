@@ -36,7 +36,9 @@ for (const r of runConformance(plugin, [
   'query v1 2 5',
   'compare v0 v2',
 ])) {
-  check(r.name, r.ok, r.detail);
+  const tag = r.skipped === true ? 'skip' : r.ok ? 'pass' : 'FAIL';
+  if (!r.ok) failures += 1;
+  console.log(`  ${tag}  ${r.name}${r.detail ? `  ${r.detail}` : ''}`);
 }
 
 /* ── 2. The spike's numbers, now from the real plugin ──────────────── */

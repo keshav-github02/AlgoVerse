@@ -11,8 +11,8 @@ through every internal change, inspect memory, scrub the timeline, and compare v
 **Early development.** The engine core and the first plugin work; there is no user interface yet.
 
 Working today: the event log and time travel, the spec-driven command parser, the plugin contract
-with its conformance kit, and a persistent segment tree that runs `build`, `update`, `query`, and
-`compare`.
+with its conformance kit, a persistent segment tree that runs `build`, `update`, `query` and
+`compare`, and a stack that exists to keep the contract honest.
 
 ```
 pnpm install
@@ -49,7 +49,7 @@ Five packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, command parser, seeded RNG. Later: playback clock, layout | partial |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-| `plugins/*` | One package per algorithm or data structure | segment tree working |
+| `plugins/*` | One package per algorithm or data structure | segment tree + stack |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera, animation — nothing else | not started |
 | `ui` | Reusable interface components | not started |
 

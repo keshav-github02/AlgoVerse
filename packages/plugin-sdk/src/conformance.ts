@@ -15,6 +15,8 @@ export interface ConformanceResult {
   readonly name: string;
   readonly ok: boolean;
   readonly detail: string;
+  /** True when the plugin has nothing for this check to examine. Not a pass. */
+  readonly skipped?: boolean;
 }
 
 interface RunOutcome {
@@ -69,17 +71,21 @@ function logDescribesStructure(events: readonly SimEvent[], structure: Structure
     if (s.label !== n.label) return `node ${String(n.id)} label "${s.label}" in log, "${n.label}" in structure`;
   }
 
-  const childrenFromEdges = new Map<NodeId, Set<NodeId>>();
+  const edgesByParent = new Map<NodeId, Map<string, NodeId>>();
   for (const e of structure.edges) {
-    const set = childrenFromEdges.get(e.from) ?? new Set<NodeId>();
-    set.add(e.to);
-    childrenFromEdges.set(e.from, set);
+    const slots = edgesByParent.get(e.from) ?? new Map<string, NodeId>();
+    slots.set(e.slot, e.to);
+    edgesByParent.set(e.from, slots);
   }
   for (const [id, s] of scene.nodes) {
-    const expected = new Set<NodeId>([s.left, s.right].filter((c): c is NodeId => c !== null));
-    const actual = childrenFromEdges.get(id) ?? new Set<NodeId>();
-    if (expected.size !== actual.size || [...expected].some((c) => !actual.has(c))) {
-      return `node ${String(id)} children differ between log and structure`;
+    const actual = edgesByParent.get(id) ?? new Map<string, NodeId>();
+    if (actual.size !== s.children.size) {
+      return `node ${String(id)} has ${s.children.size} children in the log, ${actual.size} in the structure`;
+    }
+    for (const [slot, child] of s.children) {
+      if (actual.get(slot) !== child) {
+        return `node ${String(id)} slot "${slot}" differs between log and structure`;
+      }
     }
   }
 
@@ -104,6 +110,9 @@ export function runConformance(
   const out: ConformanceResult[] = [];
   const add = (name: string, ok: boolean, detail = ''): void => {
     out.push({ name, ok, detail });
+  };
+  const skip = (name: string, detail: string): void => {
+    out.push({ name, ok: true, detail, skipped: true });
   };
   const fresh = (): PluginInstance => plugin.createInstance({ rng: createRng(1) });
 
@@ -158,6 +167,11 @@ export function runConformance(
 
   // 9. Bad semantics are returned, never thrown
   const versioned = plugin.commands.filter((c) => c.params.some((p) => p.kind === 'version'));
+  if (versioned.length === 0) {
+    // Reporting this as a pass would be a lie: nothing was exercised.
+    skip('missing versions produce an error, not a throw', 'no versioned commands to probe');
+    return out;
+  }
   let returnedCleanly = true;
   let note = `${versioned.length} commands probed`;
   for (const spec of versioned) {

@@ -150,6 +150,7 @@ class Instance implements PluginInstance {
     this.#size = values.length;
     this.#roots.push(root.id);
     events.push({ kind: 'VersionCommitted', version: 0, root: root.id });
+    events.push({ kind: 'RootsSet', roots: [...this.#roots] });
 
     return {
       ok: true,
@@ -196,6 +197,7 @@ class Instance implements PluginInstance {
     const newRoot = copy(root);
     this.#roots.push(newRoot.id);
     events.push({ kind: 'VersionCommitted', version, root: newRoot.id });
+    events.push({ kind: 'RootsSet', roots: [...this.#roots] });
 
     return {
       ok: true,

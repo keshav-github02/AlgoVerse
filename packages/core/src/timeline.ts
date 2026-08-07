@@ -12,16 +12,21 @@ export type NodeId = number & { readonly __brand: unique symbol };
 
 export type SimEvent =
   | { readonly kind: 'NodeAllocated'; readonly node: NodeId; readonly value: number; readonly label: string }
-  | { readonly kind: 'PointerSet'; readonly from: NodeId; readonly slot: 'left' | 'right'; readonly to: NodeId }
+  | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
+  /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
+  | { readonly kind: 'PointerSet'; readonly from: NodeId; readonly slot: string; readonly to: NodeId | null }
   | { readonly kind: 'NodeReused'; readonly node: NodeId; readonly by: NodeId }
   | { readonly kind: 'NodeVisited'; readonly node: NodeId }
+  /** Replaces the current entry points. */
+  | { readonly kind: 'RootsSet'; readonly roots: readonly NodeId[] }
+  /** Appends to the version history. Only persistent structures emit this. */
   | { readonly kind: 'VersionCommitted'; readonly version: number; readonly root: NodeId };
 
 export interface SceneNode {
   readonly value: number;
   readonly label: string;
-  readonly left: NodeId | null;
-  readonly right: NodeId | null;
+  /** Keyed by slot name, so a node may have two children or twenty. */
+  readonly children: ReadonlyMap<string, NodeId>;
 }
 
 export interface SceneState {
@@ -29,7 +34,10 @@ export interface SceneState {
   readonly reuseCount: ReadonlyMap<NodeId, number>;
   /** Times each node was touched by a traversal — the measured cost of an operation. */
   readonly visits: ReadonlyMap<NodeId, number>;
+  /** Where a renderer starts walking. Replaced wholesale, not accumulated. */
   readonly roots: readonly NodeId[];
+  /** Committed versions, in order. Empty for structures without history. */
+  readonly versions: readonly NodeId[];
 }
 
 export const EMPTY_SCENE: SceneState = {
@@ -37,6 +45,7 @@ export const EMPTY_SCENE: SceneState = {
   reuseCount: new Map(),
   visits: new Map(),
   roots: [],
+  versions: [],
 };
 
 /** Pure. Same (state, event) always yields the same next state. */
@@ -44,14 +53,23 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
   switch (e.kind) {
     case 'NodeAllocated': {
       const nodes = new Map(s.nodes);
-      nodes.set(e.node, { value: e.value, label: e.label, left: null, right: null });
+      nodes.set(e.node, { value: e.value, label: e.label, children: new Map() });
+      return { ...s, nodes };
+    }
+    case 'NodeDeleted': {
+      if (!s.nodes.has(e.node)) return s;
+      const nodes = new Map(s.nodes);
+      nodes.delete(e.node);
       return { ...s, nodes };
     }
     case 'PointerSet': {
       const parent = s.nodes.get(e.from);
       if (parent === undefined) return s;
+      const children = new Map(parent.children);
+      if (e.to === null) children.delete(e.slot);
+      else children.set(e.slot, e.to);
       const nodes = new Map(s.nodes);
-      nodes.set(e.from, e.slot === 'left' ? { ...parent, left: e.to } : { ...parent, right: e.to });
+      nodes.set(e.from, { ...parent, children });
       return { ...s, nodes };
     }
     case 'NodeReused': {
@@ -64,8 +82,10 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
       visits.set(e.node, (visits.get(e.node) ?? 0) + 1);
       return { ...s, visits };
     }
+    case 'RootsSet':
+      return { ...s, roots: [...e.roots] };
     case 'VersionCommitted':
-      return { ...s, roots: [...s.roots, e.root] };
+      return { ...s, versions: [...s.versions, e.root] };
     default: {
       const never: never = e;
       throw new Error(`unhandled event: ${JSON.stringify(never)}`);
@@ -107,7 +127,7 @@ export class Timeline {
       if (k <= n && k > base) base = k;
     }
     let s = this.#keyframes.get(base) as SceneState;
-    for (let i = base; i < n; i++) s = reduce(s, this.#log[i] as SimEvent);
+    for (let i = base; i < n; i += 1) s = reduce(s, this.#log[i] as SimEvent);
     return s;
   }
 }
@@ -116,8 +136,12 @@ export class Timeline {
 export function fingerprint(s: SceneState): string {
   const nodes = [...s.nodes.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([id, n]) =>
-      `${id}=${n.value}${n.label}:${n.left ?? '_'},${n.right ?? '_'}` +
-      `x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`);
-  return `r[${s.roots.join(',')}] ${nodes.join(' ')}`;
+    .map(([id, n]) => {
+      const kids = [...n.children.entries()]
+        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+        .map(([slot, child]) => `${slot}>${child}`)
+        .join(',');
+      return `${id}=${n.value}${n.label}{${kids}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
+    });
+  return `r[${s.roots.join(',')}] h[${s.versions.join(',')}] ${nodes.join(' ')}`;
 }
