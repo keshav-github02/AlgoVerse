@@ -7,7 +7,6 @@
  */
 
 import type { JSX } from 'react';
-import type { NodeId } from '@algoverse/core';
 import type { DiffResult } from '../diff.ts';
 
 function Swatch({ className, label, count }: {
@@ -27,14 +26,14 @@ function Swatch({ className, label, count }: {
   );
 }
 
-export function DiffPanel({ versions, a, b, onChange, result }: {
-  readonly versions: readonly NodeId[];
+export function DiffPanel({ versionCount, a, b, onChange, result }: {
+  readonly versionCount: number;
   readonly a: number;
   readonly b: number;
   readonly onChange: (a: number, b: number) => void;
   readonly result: DiffResult | null;
 }): JSX.Element {
-  const options = versions.map((_, i) => i);
+  const options = Array.from({ length: versionCount }, (_, i) => i);
   const pick = (value: number, onPick: (n: number) => void, label: string): JSX.Element => (
     <select
       value={value}

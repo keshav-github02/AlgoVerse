@@ -12,8 +12,8 @@ import type { Emphasis } from '@algoverse/renderer';
 export interface DiffResult {
   readonly diff: RootDiff;
   readonly emphasis: ReadonlyMap<NodeId, Emphasis>;
-  readonly rootA: NodeId;
-  readonly rootB: NodeId;
+  readonly rootsA: readonly NodeId[];
+  readonly rootsB: readonly NodeId[];
 }
 
 /**
@@ -26,14 +26,14 @@ export function computeDiff(
   a: number,
   b: number,
 ): DiffResult | null {
-  const rootA = state.versions[a];
-  const rootB = state.versions[b];
-  if (rootA === undefined || rootB === undefined) return null;
+  const rootsA = state.versions[a];
+  const rootsB = state.versions[b];
+  if (rootsA === undefined || rootsB === undefined) return null;
 
-  const diff = diffRoots(sceneToStructure(state, hint), rootA, rootB);
+  const diff = diffRoots(sceneToStructure(state, hint), rootsA, rootsB);
   const emphasis = new Map<NodeId, Emphasis>();
   for (const [id, where] of diff.membership) {
     emphasis.set(id, where === 'shared' ? 'primary' : where === 'neither' ? 'muted' : 'secondary');
   }
-  return { diff, emphasis, rootA, rootB };
+  return { diff, emphasis, rootsA, rootsB };
 }

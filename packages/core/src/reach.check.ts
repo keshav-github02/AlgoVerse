@@ -57,7 +57,7 @@ check('a cycle terminates', (() => {
 
 console.log('\ndiff');
 
-const d = diffRoots(shared, id(0), id(5));
+const d = diffRoots(shared, [id(0)], [id(5)]);
 check('shared nodes are found', d.shared.map(Number).sort((a, b) => a - b).join(',') === '3,4',
   `[${d.shared.join(',')}]`);
 check('nodes only in A are found', d.onlyA.map(Number).sort((a, b) => a - b).join(',') === '0,1');
@@ -69,7 +69,7 @@ check('shared ratio is measured against B', Math.round(d.sharedRatio * 100) === 
   `${Math.round(d.sharedRatio * 100)}% of v1 reused`);
 
 check('comparing a version with itself is total reuse', (() => {
-  const same = diffRoots(shared, id(0), id(0));
+  const same = diffRoots(shared, [id(0)], [id(0)]);
   return same.onlyA.length === 0 && same.onlyB.length === 0 && same.sharedRatio === 1;
 })());
 
@@ -78,17 +78,17 @@ check('nodes in neither version are marked', (() => {
     ...shared,
     nodes: [...shared.nodes, node(9)],
   };
-  return diffRoots(orphaned, id(0), id(5)).membership.get(id(9)) === 'neither';
+  return diffRoots(orphaned, [id(0)], [id(5)]).membership.get(id(9)) === 'neither';
 })());
 
 check('an empty B gives a zero ratio', (() => {
-  const empty = diffRoots(shared, id(0), id(99));
+  const empty = diffRoots(shared, [id(0)], [id(99)]);
   return empty.sharedRatio === 0 && empty.onlyA.length === 4;
 })());
 
 check('diffing is order-sensitive in the right way', (() => {
-  const forward = diffRoots(shared, id(0), id(5));
-  const back = diffRoots(shared, id(5), id(0));
+  const forward = diffRoots(shared, [id(0)], [id(5)]);
+  const back = diffRoots(shared, [id(5)], [id(0)]);
   return forward.onlyA.join() === back.onlyB.join()
     && forward.onlyB.join() === back.onlyA.join()
     && forward.shared.join() === back.shared.join();

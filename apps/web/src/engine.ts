@@ -18,9 +18,10 @@ import {
   type AlgorithmPlugin, type PluginInstance, type Statistics,
 } from '@algoverse/plugin-sdk';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
+import { persistentBit } from '@algoverse/plugin-persistent-bit';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, stack];
 
 export interface HistoryEntry {
   readonly line: string;

@@ -262,7 +262,7 @@ export function App(): JSX.Element {
           <Panel title={mode === 'diff' ? 'Compare versions' : 'Inspector'}>
             {mode === 'diff' && canDiff ? (
               <DiffPanel
-                versions={versions} a={diffA} b={Math.min(diffB, versions.length - 1)}
+                versionCount={versions.length} a={diffA} b={Math.min(diffB, versions.length - 1)}
                 onChange={setDiff} result={diff}
               />
             ) : (

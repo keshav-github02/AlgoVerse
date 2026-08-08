@@ -26,6 +26,12 @@ export interface StructureNode {
    * in a structure without history.
    */
   readonly origin: number;
+  /**
+   * Optional reading order along the layout axis. Layout otherwise derives x
+   * from a depth-first walk, which assumes the structure's natural order is its
+   * traversal order — true for a tree, false for anything indexed.
+   */
+  readonly order?: number;
 }
 
 export interface StructureEdge {

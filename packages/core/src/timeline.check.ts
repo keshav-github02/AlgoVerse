@@ -68,11 +68,11 @@ function segmentTreeLog(arr: readonly number[]): readonly SimEvent[] {
   };
 
   const v0 = build(0, arr.length, 0);
-  events.push({ kind: 'VersionCommitted', version: 0, root: v0.id });
+  events.push({ kind: 'VersionCommitted', version: 0, roots: [v0.id] });
   const v1 = update(v0, 3, 10, 1);
-  events.push({ kind: 'VersionCommitted', version: 1, root: v1.id });
+  events.push({ kind: 'VersionCommitted', version: 1, roots: [v1.id] });
   const v2 = update(v1, 6, 7, 2);
-  events.push({ kind: 'VersionCommitted', version: 2, root: v2.id });
+  events.push({ kind: 'VersionCommitted', version: 2, roots: [v2.id] });
   return events;
 }
 
@@ -127,7 +127,7 @@ const readAll = (root: NodeId): number[] => {
   walk(root);
   return out;
 };
-const [r0, r1, r2] = final.versions;
+const [r0, r1, r2] = final.versions.map((v) => v[0]);
 check('v0 unchanged by later updates', String(readAll(r0 as NodeId)) === String(ARR),
   `[${readAll(r0 as NodeId)}]`);
 check('v1 sees update 3 -> 10', String(readAll(r1 as NodeId)) === String([3, 1, 4, 10, 5, 9, 2, 6]));

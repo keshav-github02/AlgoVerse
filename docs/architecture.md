@@ -199,6 +199,23 @@ A fifth problem was in the conformance kit rather than the contract: its bad-sem
 examines commands declaring a `version` parameter, so against a stack it examined nothing and
 reported a pass. It now reports **skipped**, which is the truth.
 
+### What the third plugin found
+
+The persistent BIT is a Fenwick tree with path copying — persistent like the segment tree, but a
+different shape. It exposed two more assumptions, both invisible while every plugin was a tree:
+
+| Assumption | Why it broke | Fix |
+| --- | --- | --- |
+| A version has one root | A Fenwick forest has one root only when *n* is a power of two; at *n* = 6 the roots are cells 4 and 6 | `VersionCommitted` carries `roots: NodeId[]`, and `SceneState.versions` is a list of root lists |
+| Reading order is traversal order | True for a tree, false for anything indexed: cell 4 belongs at column 4, not centred between cells 2 and 3 | `StructureNode.order` is optional; when every slot declares one, layout places by it and skips centring |
+
+The first is the more important: "a version is a set of entry points, not one node" is the truthful
+model, and it will matter again for any forest-shaped structure.
+
+Both are cheap changes that were expensive to foresee. The README's claim that adding an algorithm
+needs no engine changes held for the stack and did not hold here — which is the argument for adding
+plugins early rather than after the contract has hardened.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets

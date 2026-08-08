@@ -33,8 +33,13 @@ export type SimEvent =
   | { readonly kind: 'NodeVisited'; readonly node: NodeId }
   /** Replaces the current entry points. */
   | { readonly kind: 'RootsSet'; readonly roots: readonly NodeId[] }
-  /** Appends to the version history. Only persistent structures emit this. */
-  | { readonly kind: 'VersionCommitted'; readonly version: number; readonly root: NodeId };
+  /**
+   * Appends to the version history. Only persistent structures emit this.
+   *
+   * `roots` is a list because a version is a set of entry points, not one node.
+   * A Fenwick forest has several whenever its size is not a power of two.
+   */
+  | { readonly kind: 'VersionCommitted'; readonly version: number; readonly roots: readonly NodeId[] };
 
 export interface SceneNode {
   readonly value: number;
@@ -54,8 +59,8 @@ export interface SceneState {
   readonly visits: ReadonlyMap<NodeId, number>;
   /** Where a renderer starts walking. Replaced wholesale, not accumulated. */
   readonly roots: readonly NodeId[];
-  /** Committed versions, in order. Empty for structures without history. */
-  readonly versions: readonly NodeId[];
+  /** Committed versions, in order, each with its own entry points. */
+  readonly versions: readonly (readonly NodeId[])[];
 }
 
 export const EMPTY_SCENE: SceneState = {
@@ -107,7 +112,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
     case 'RootsSet':
       return { ...s, roots: [...e.roots] };
     case 'VersionCommitted':
-      return { ...s, versions: [...s.versions, e.root] };
+      return { ...s, versions: [...s.versions, [...e.roots]] };
     default: {
       const never: never = e;
       throw new Error(`unhandled event: ${JSON.stringify(never)}`);
@@ -181,5 +186,6 @@ export function fingerprint(s: SceneState): string {
       return `${id}=${n.value}${n.label}@${n.slot}#${n.origin}` +
         `{${kids}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
     });
-  return `r[${s.roots.join(',')}] h[${s.versions.join(',')}] ${nodes.join(' ')}`;
+  const history = s.versions.map((v) => v.join('+')).join(',');
+  return `r[${s.roots.join(',')}] h[${history}] ${nodes.join(' ')}`;
 }

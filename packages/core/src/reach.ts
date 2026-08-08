@@ -50,10 +50,14 @@ export interface RootDiff {
   readonly sharedRatio: number;
 }
 
-export function diffRoots(graph: StructureGraph, a: NodeId, b: NodeId): RootDiff {
+export function diffRoots(
+  graph: StructureGraph,
+  a: readonly NodeId[],
+  b: readonly NodeId[],
+): RootDiff {
   const adj = adjacency(graph);
-  const sa = walk(adj, [a]);
-  const sb = walk(adj, [b]);
+  const sa = walk(adj, a);
+  const sb = walk(adj, b);
 
   const shared: NodeId[] = [];
   const onlyA: NodeId[] = [];

@@ -167,7 +167,7 @@ class Instance implements PluginInstance {
     const root = build(0, values.length, 0);
     this.#size = values.length;
     this.#roots.push(root.id);
-    events.push({ kind: 'VersionCommitted', version: 0, root: root.id });
+    events.push({ kind: 'VersionCommitted', version: 0, roots: [root.id] });
     events.push({ kind: 'RootsSet', roots: [...this.#roots] });
 
     return {
@@ -214,7 +214,7 @@ class Instance implements PluginInstance {
 
     const newRoot = copy(root);
     this.#roots.push(newRoot.id);
-    events.push({ kind: 'VersionCommitted', version, root: newRoot.id });
+    events.push({ kind: 'VersionCommitted', version, roots: [newRoot.id] });
     events.push({ kind: 'RootsSet', roots: [...this.#roots] });
 
     return {
@@ -264,7 +264,7 @@ class Instance implements PluginInstance {
 
     // Reachability is structural, so it lives in core rather than being
     // re-implemented per plugin - and the diff view uses the same function.
-    const diff = diffRoots(this.getStructure(), ra.id, rb.id);
+    const diff = diffRoots(this.getStructure(), [ra.id], [rb.id]);
     const shared = diff.shared;
     return {
       ok: true,

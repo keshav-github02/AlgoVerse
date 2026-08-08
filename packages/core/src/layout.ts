@@ -161,41 +161,66 @@ function layered(graph: StructureGraph, o: LayoutOptions): PositionedScene {
     childSlots.set(key, [...list].sort((a, b) => naturalCompare(a.via, b.via)).map((r) => r.slot));
   }
 
-  // Leaves take their x from traversal order; parents centre over their children.
-  let cursor = o.margin;
-  for (const key of orderLeafSlots(graph, slots, childSlots)) {
-    const s = slots.get(key) as Slot;
-    s.x = cursor + s.halfWidth;
-    cursor += s.halfWidth * 2 + o.siblingGap;
-  }
+  const declaredOrder = (key: string): number | undefined => {
+    const declared = (slots.get(key)?.members ?? [])
+      .map((m) => m.order)
+      .filter((v): v is number => v !== undefined);
+    return declared.length === 0 ? undefined : Math.min(...declared);
+  };
+  const everySlot = [...slots.values()];
+  const indexed = everySlot.length > 0 && everySlot.every((s) => declaredOrder(s.key) !== undefined);
 
-  const byDepthDesc = [...slots.values()].sort((a, b) => b.depth - a.depth);
-  for (const s of byDepthDesc) {
-    const kids = childSlots.get(s.key) ?? [];
-    if (kids.length === 0) continue;
-    const xs = kids.map((k) => (slots.get(k) as Slot).x);
-    s.x = xs.reduce((a, b) => a + b, 0) / xs.length;
-  }
-
-  // Centring can pull neighbours together; push them apart per depth.
-  const depths = new Map<number, Slot[]>();
-  for (const s of slots.values()) {
-    const list = depths.get(s.depth) ?? [];
-    list.push(s);
-    depths.set(s.depth, list);
-  }
-  for (const list of depths.values()) {
-    list.sort((a, b) => a.x - b.x);
-    for (let i = 1; i < list.length; i += 1) {
-      const prev = list[i - 1] as Slot;
-      const cur = list[i] as Slot;
-      const minX = prev.x + prev.halfWidth + o.siblingGap + cur.halfWidth;
-      if (cur.x < minX) cur.x = minX;
+  if (indexed) {
+    /**
+     * Every slot declared its place, so lay them out in one run and skip
+     * centring entirely. Centring a parent over its children is right for a
+     * tree, where the parent has no position of its own; in an indexed
+     * structure cell 4 belongs at column 4, not between columns 2 and 3.
+     */
+    const sorted = [...everySlot].sort(
+      (x, y) => (declaredOrder(x.key) as number) - (declaredOrder(y.key) as number));
+    let cursor = o.margin;
+    for (const s of sorted) {
+      s.x = cursor + s.halfWidth;
+      cursor += s.halfWidth * 2 + o.siblingGap;
     }
-    const first = list[0] as Slot | undefined;
-    if (first !== undefined) {
-      const shift = o.margin + first.halfWidth - first.x;
-      if (shift > 0) for (const s of list) s.x += shift;
+  } else {
+    // Leaves take their x from traversal order; parents centre over children.
+    let cursor = o.margin;
+    for (const key of orderLeafSlots(graph, slots, childSlots)) {
+      const s = slots.get(key) as Slot;
+      s.x = cursor + s.halfWidth;
+      cursor += s.halfWidth * 2 + o.siblingGap;
+    }
+
+    const byDepthDesc = [...slots.values()].sort((a, b) => b.depth - a.depth);
+    for (const s of byDepthDesc) {
+      const kids = childSlots.get(s.key) ?? [];
+      if (kids.length === 0) continue;
+      const xs = kids.map((k) => (slots.get(k) as Slot).x);
+      s.x = xs.reduce((a, b) => a + b, 0) / xs.length;
+    }
+
+    // Centring can pull neighbours together; push them apart per depth.
+    const depths = new Map<number, Slot[]>();
+    for (const s of slots.values()) {
+      const list = depths.get(s.depth) ?? [];
+      list.push(s);
+      depths.set(s.depth, list);
+    }
+    for (const list of depths.values()) {
+      list.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < list.length; i += 1) {
+        const prev = list[i - 1] as Slot;
+        const cur = list[i] as Slot;
+        const minX = prev.x + prev.halfWidth + o.siblingGap + cur.halfWidth;
+        if (cur.x < minX) cur.x = minX;
+      }
+      const first = list[0] as Slot | undefined;
+      if (first !== undefined) {
+        const shift = o.margin + first.halfWidth - first.x;
+        if (shift > 0) for (const s of list) s.x += shift;
+      }
     }
   }
 
