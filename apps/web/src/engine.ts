@@ -7,9 +7,9 @@
  */
 
 import {
-  Playback, Timeline, createRng, layout, parseCommand, sceneToStructure,
-  type LayoutHint, type NodeId, type OperationError, type PositionedScene,
-  type SceneState, type SimEvent,
+  Playback, Timeline, createRng, describeEvent, layout, parseCommand, sceneToStructure,
+  type LayoutHint, type NodeId, type OperationError, type ParsedCommand,
+  type PositionedScene, type SceneState, type SimEvent,
 } from '@algoverse/core';
 import {
   ZERO_STATS, addStats,
@@ -40,6 +40,8 @@ export class Session {
   #instance: PluginInstance;
   #timeline = new Timeline();
   #events: SimEvent[] = [];
+  /** Parallel to timeline.marks: the command each operation ran. */
+  #commands: ParsedCommand[] = [];
   #history: HistoryEntry[] = [];
   #stats: Statistics = ZERO_STATS;
   #hint: LayoutHint;
@@ -96,6 +98,7 @@ export class Session {
 
     const result = this.#instance.execute(parsed.command);
     this.#timeline.append(result.events, trimmed);
+    if (result.events.length > 0) this.#commands.push(parsed.command);
     this.#events.push(...result.events);
     this.#stats = addStats(this.#stats, result.statsDelta);
     this.#history.push(
@@ -113,6 +116,7 @@ export class Session {
     this.#instance.reset();
     this.#timeline = new Timeline();
     this.#events = [];
+    this.#commands = [];
     this.#history = [];
     this.#stats = ZERO_STATS;
     this.#relayout();
@@ -150,20 +154,27 @@ export class Session {
   currentEvent(): SimEvent | undefined {
     return this.#timeline.eventAt(this.playback.step - 1);
   }
-}
 
-export function describeEvent(e: SimEvent | undefined): string {
-  if (e === undefined) return 'ready';
-  switch (e.kind) {
-    case 'NodeAllocated': return `allocate ${e.label} = ${e.value}`;
-    case 'NodeDeleted': return `free node ${e.node}`;
-    case 'PointerSet': return e.to === null
-      ? `clear ${e.slot} of node ${e.from}`
-      : `point ${e.slot} of node ${e.from} at node ${e.to}`;
-    case 'NodeReused': return `reuse node ${e.node} under node ${e.by}`;
-    case 'NodeVisited': return `visit node ${e.node}`;
-    case 'RootsSet': return `entry points: ${e.roots.length === 0 ? 'none' : e.roots.join(', ')}`;
-    case 'VersionCommitted': return `commit v${e.version}`;
-    default: return '';
+  /**
+   * Why the current step happened. The plugin's explainer gets the command
+   * that caused the event, so it can cite the actual arguments; where it
+   * declines, the generic description shows through.
+   */
+  explanation(): string {
+    const step = this.playback.step;
+    const event = this.#timeline.eventAt(step - 1);
+    if (event === undefined) return 'Run a command to begin.';
+
+    const marks = this.#timeline.marks;
+    const which = marks.findIndex((m) => step <= m.index);
+    const command = which === -1 ? null : this.#commands[which] ?? null;
+
+    const own = this.plugin.explain?.(event, {
+      after: this.playback.scene(),
+      command,
+      step,
+    });
+    return own ?? describeEvent(event);
   }
 }
+

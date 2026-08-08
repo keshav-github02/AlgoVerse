@@ -380,15 +380,40 @@ that testable; string throws do not.
 
 ## 9. Explanations
 
-Explanations are **templates over events**, authored per plugin as pure functions:
+Explanations are **templates over events**, authored per plugin as pure functions and declared as
+an optional `explain` on the plugin:
 
 ```ts
-type Explainer = (event: SimEvent, ctx: ExplainContext) => string;
+type Explainer = (event: SimEvent, ctx: ExplainContext) => string | null;
+
+interface ExplainContext {
+  readonly after: SceneState;            // state immediately after the event
+  readonly command: ParsedCommand | null; // so a sentence can cite real arguments
+  readonly step: number;
+}
 ```
 
-"Copied node 14 because version 1 writes index 3, which lies in its range." Deterministic,
-offline, testable, and versionable with the event schema. No generated prose, nothing to review
-at runtime.
+> Copy of range [2, 4), because the write to index 3 falls inside range [2, 4). Only nodes on this
+> one root-to-leaf path are copied — everything else is shared.
+
+Deterministic, offline, testable, and versionable with the event schema. No generated prose,
+nothing to review at runtime.
+
+**Prose is never stored in the log.** An explainer could just as easily have run at execution time
+and stapled its output onto each event, which would have been simpler — but that puts English into
+serialised state, bloats every saved simulation, and means improving a sentence requires re-running
+the algorithm. Reconstructing on demand keeps the log pure data and leaves one obvious place to add
+other languages.
+
+The context carries the **command**, which is what lets an explanation say *why* rather than *what*:
+without it the best available sentence is "a node was allocated". Returning `null` falls back to the
+generic description, so a plugin narrates only what is worth narrating and the mechanical events
+still say something.
+
+Explanations are prose, and prose is easy to get confidently wrong — the first version of the
+segment tree's query explainer described ranges lying entirely outside the query as "straddling the
+edge", because it tested for *contained* and treated everything else as *partial*. Assertions that
+only check for non-empty text will not catch that. Read the output.
 
 ---
 

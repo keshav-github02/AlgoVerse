@@ -7,8 +7,8 @@
  * possible — and is the same property that keeps the event log out of React.
  */
 
-import type { NodeId } from '@algoverse/core';
-import { PLUGINS, Session, describeEvent } from './engine.ts';
+import { describeEvent, type NodeId } from '@algoverse/core';
+import { PLUGINS, Session } from './engine.ts';
 import { computeDiff } from './diff.ts';
 
 let failures = 0;
@@ -160,6 +160,99 @@ check('every event kind produces a description', (() => {
   return true;
 })());
 check('step zero reads as ready', (() => { s.playback.first(); return describeEvent(s.currentEvent()) === 'ready'; })());
+
+/* ── Explanations ──────────────────────────────────────────────────── */
+
+console.log('\nexplanations');
+
+check('every step explains itself', (() => {
+  for (let step = 0; step <= s.playback.length; step += 1) {
+    s.playback.seek(step);
+    if (s.explanation().trim().length === 0) return false;
+  }
+  return true;
+})(), `${s.playback.length + 1} steps`);
+
+check('explanations are deterministic', (() => {
+  s.playback.seek(20);
+  const first = s.explanation();
+  s.playback.first();
+  s.playback.seek(20);
+  return s.explanation() === first;
+})());
+
+check('an explanation cites the command that caused it', (() => {
+  // Find the first node copied by the second update and check it names index 6.
+  for (let step = 1; step <= s.playback.length; step += 1) {
+    s.playback.seek(step);
+    const e = s.currentEvent();
+    if (e?.kind === 'NodeAllocated' && e.origin === 2 && e.role === 'internal') {
+      return s.explanation().includes('index 6');
+    }
+  }
+  return false;
+})());
+
+check('sharing is explained where it happens', (() => {
+  for (let step = 1; step <= s.playback.length; step += 1) {
+    s.playback.seek(step);
+    if (s.currentEvent()?.kind === 'NodeReused') {
+      return s.explanation().toLowerCase().includes('instead of copying');
+    }
+  }
+  return false;
+})());
+
+// Regression: a node wholly outside the query range is not "partly overlapping",
+// and a leaf has no children to descend into.
+check('a disjoint range is not described as overlapping', (() => {
+  const q = new Session(segTree);
+  q.run('build [3 1 4 1 5 9 2 6]');
+  q.run('query v0 2 5');
+  const said: string[] = [];
+  for (let step = 1; step <= q.playback.length; step += 1) {
+    q.playback.seek(step);
+    if (q.currentEvent()?.kind === 'NodeVisited') said.push(q.explanation());
+  }
+  const outside = said.filter((t) => t.includes('lies outside'));
+  return outside.length === 3 && !outside.some((t) => t.includes('descend'));
+})());
+
+check('a query explains why the descent stopped', (() => {
+  const q = new Session(segTree);
+  q.run('build [3 1 4 1 5 9 2 6]');
+  q.run('query v0 2 5');
+  for (let step = q.playback.marks[0]?.index ?? 0; step <= q.playback.length; step += 1) {
+    q.playback.seek(step);
+    if (q.currentEvent()?.kind === 'NodeVisited' && q.explanation().includes('stops here')) return true;
+  }
+  return false;
+})());
+
+check('the other plugin explains in its own terms', (() => {
+  const st = new Session(stackPlugin);
+  st.run('push 3');
+  st.run('push 7');
+  st.playback.last();
+  const said: string[] = [];
+  for (let step = 1; step <= st.playback.length; step += 1) {
+    st.playback.seek(step);
+    said.push(st.explanation());
+  }
+  return said.some((t) => t.includes('goes on top'))
+    && said.some((t) => t.includes('a stack is a chain'))
+    && !said.some((t) => t.toLowerCase().includes('version'));
+})());
+
+check('a plugin without an explainer still describes events', (() => {
+  // Omit the key rather than setting it undefined: exactOptionalPropertyTypes
+  // treats those as different, and the contract means "absent".
+  const { explain, ...bare } = stackPlugin;
+  const b = new Session(bare);
+  b.run('push 5');
+  b.playback.seek(1);
+  return b.explanation() === describeEvent(b.currentEvent());
+})());
 
 /* ── The other plugin ──────────────────────────────────────────────── */
 

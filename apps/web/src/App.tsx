@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type JSX } from 'react';
-import { usage, type NodeId } from '@algoverse/core';
-import { PLUGINS, Session, describeEvent } from './engine.ts';
+import { describeEvent, usage, type NodeId } from '@algoverse/core';
+import { PLUGINS, Session } from './engine.ts';
 import { useUi } from './store.ts';
 import { Scene } from './components/Scene.tsx';
 import { Console } from './components/Console.tsx';
@@ -188,7 +188,17 @@ export function App(): JSX.Element {
           </section>
         </div>
 
-        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-2">
+        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-2">
+          <Panel title="Explanation">
+            <p className="text-xs leading-relaxed text-[var(--dim)]">
+              <span className="font-mono text-[10px] text-[var(--faint)]">
+                step {playback.step}/{playback.length}
+                {playback.currentMark() === undefined ? '' : ` · ${playback.currentMark()?.label ?? ''}`}
+              </span>
+              <br />
+              {session.explanation()}
+            </p>
+          </Panel>
           <Panel title={mode === 'diff' ? 'Compare versions' : 'Inspector'}>
             {mode === 'diff' && canDiff ? (
               <DiffPanel

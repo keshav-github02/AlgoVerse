@@ -4,6 +4,8 @@ export {
   failed,
   type AlgorithmPlugin,
   type EngineContext,
+  type ExplainContext,
+  type Explainer,
   type LayoutHint,
   type OperationResult,
   type PluginInstance,

@@ -17,6 +17,7 @@ import {
   type PluginInstance, type SerializedState,
   type StructureEdge, type StructureGraph, type StructureNode,
 } from '@algoverse/plugin-sdk';
+import { explainSegmentTree } from './explain.ts';
 
 const SCHEMA_VERSION = 1;
 
@@ -326,5 +327,6 @@ export const persistentSegmentTree: AlgorithmPlugin = {
     summary: 'Range sums over every historical version, with memory shared between them.',
   },
   commands: COMMANDS,
+  explain: explainSegmentTree,
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

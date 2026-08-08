@@ -17,29 +17,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  Playback, Timeline, createRng, layout, parseCommand, sceneToStructure,
-  type LayoutHint, type NodeId, type PositionedScene, type SimEvent,
+  Playback, Timeline, createRng, describeEvent, layout, parseCommand, sceneToStructure,
+  type LayoutHint, type NodeId, type ParsedCommand, type PositionedScene, type SimEvent,
 } from '@algoverse/core';
 import { SCENE_STYLES, escapeXml, renderScene } from './svg.ts';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
 import { stack } from '@algoverse/plugin-stack';
-
-/** A first pass at explanations: template text derived from one event. */
-function describe(e: SimEvent | undefined): string {
-  if (e === undefined) return 'start';
-  switch (e.kind) {
-    case 'NodeAllocated': return `allocate ${e.label} = ${e.value}`;
-    case 'NodeDeleted': return `free node ${e.node}`;
-    case 'PointerSet': return e.to === null
-      ? `clear ${e.slot} pointer of node ${e.from}`
-      : `point ${e.slot} of node ${e.from} at node ${e.to}`;
-    case 'NodeReused': return `reuse node ${e.node} under node ${e.by}`;
-    case 'NodeVisited': return `visit node ${e.node}`;
-    case 'RootsSet': return `entry points now ${e.roots.length === 0 ? 'none' : e.roots.join(', ')}`;
-    case 'VersionCommitted': return `commit v${e.version}`;
-    default: return '';
-  }
-}
 
 interface Panel {
   readonly heading: string;
@@ -58,6 +41,7 @@ function drive(
   const timeline = new Timeline();
   const session: { line: string; out: string }[] = [];
   const all: SimEvent[] = [];
+  const commands: ParsedCommand[] = [];
 
   for (const line of script) {
     const parsed = parseCommand(line, plugin.commands);
@@ -68,6 +52,7 @@ function drive(
     const r = inst.execute(parsed.command);
     session.push({ line, out: r.ok ? JSON.stringify(r.value) : `${r.error.code}: ${r.error.message}` });
     timeline.append(r.events, line);
+    if (r.events.length > 0) commands.push(parsed.command);
     all.push(...r.events);
   }
 
@@ -82,6 +67,17 @@ function drive(
   const stable = layout(sceneToStructure(union.stateAt(union.length), hint));
 
   const playback = new Playback(timeline);
+
+  /** The plugin's own words where it has them, the generic ones where it does not. */
+  const explainAt = (step: number): string => {
+    const event = timeline.eventAt(step - 1);
+    if (event === undefined) return 'ready';
+    const which = timeline.marks.findIndex((m) => step <= m.index);
+    const command = which === -1 ? null : commands[which] ?? null;
+    return plugin.explain?.(event, { after: playback.scene(), command, step })
+      ?? describeEvent(event);
+  };
+
   const frames: { svg: string; note: string }[] = [];
   for (let step = 0; step <= timeline.length; step += 1) {
     playback.seek(step);
@@ -96,7 +92,7 @@ function drive(
     const visited = [...playback.scene().visits.keys()].filter((id) => present.has(id));
     frames.push({
       svg: renderScene(scene, { title: `${plugin.meta.name} at step ${step}`, highlight: visited }),
-      note: `${String(step).padStart(2, '0')}/${timeline.length}  ${describe(timeline.eventAt(step - 1))}`,
+      note: `${String(step).padStart(2, '0')}/${timeline.length}  ${explainAt(step)}`,
     });
   }
 

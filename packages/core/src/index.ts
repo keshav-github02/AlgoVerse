@@ -20,6 +20,8 @@ export {
   type RootDiff,
 } from './reach.ts';
 
+export { describeEvent } from './explain.ts';
+
 export { BASE_RATE, Playback } from './playback.ts';
 
 export { createRng, type Rng } from './rng.ts';

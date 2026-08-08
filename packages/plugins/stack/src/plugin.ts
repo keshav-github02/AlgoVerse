@@ -17,6 +17,7 @@ import {
   type PluginInstance, type SerializedState, type StructureEdge,
   type StructureGraph, type StructureNode,
 } from '@algoverse/plugin-sdk';
+import { explainStack } from './explain.ts';
 
 const SCHEMA_VERSION = 1;
 
@@ -184,5 +185,6 @@ export const stack: AlgorithmPlugin = {
     summary: 'Last in, first out. The simplest thing that can hold the plugin contract to account.',
   },
   commands: COMMANDS,
+  explain: explainStack,
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

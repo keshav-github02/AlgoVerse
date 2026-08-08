@@ -10,7 +10,7 @@
  */
 
 import type {
-  CommandSpec, LayoutHint, OperationError, ParsedCommand, Rng, SimEvent,
+  CommandSpec, LayoutHint, OperationError, ParsedCommand, Rng, SceneState, SimEvent,
   StructureEdge, StructureGraph, StructureNode,
 } from '@algoverse/core';
 
@@ -97,10 +97,33 @@ export interface PluginInstance {
   reset(): void;
 }
 
+export interface ExplainContext {
+  /** Scene state immediately after the event. */
+  readonly after: SceneState;
+  /** The command this event belongs to, so an explainer can cite its arguments. */
+  readonly command: ParsedCommand | null;
+  /** Index of the event in the whole log. */
+  readonly step: number;
+}
+
+/**
+ * Why an event happened, in the algorithm's own terms.
+ *
+ * A pure function of the event and the surrounding state — never generated at
+ * execution time and stored. Keeping prose out of the log means the log stays
+ * serialisable data, explanations can be rewritten without re-running anything,
+ * and there is one obvious place to add other languages later.
+ *
+ * Return `null` for events not worth narrating; the generic description shows
+ * through instead.
+ */
+export type Explainer = (event: SimEvent, ctx: ExplainContext) => string | null;
+
 export interface AlgorithmPlugin {
   readonly meta: PluginMeta;
   readonly commands: readonly CommandSpec[];
   createInstance(ctx: EngineContext): PluginInstance;
+  readonly explain?: Explainer;
 }
 
 /** Convenience for plugins returning a failure. */
