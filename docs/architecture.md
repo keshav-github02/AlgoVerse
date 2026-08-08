@@ -55,7 +55,7 @@ state(N) = events.slice(0, N).reduce(reduce, initialState)
 `reduce` is pure. Stepping backward means rewinding to the nearest keyframe and replaying
 forward, not undoing.
 
-**Why not inverse events.** The alternative — every event carries its own undo — doubles the
+**Why not inverse events.** The alternative - every event carries its own undo - doubles the
 authoring cost of every plugin, and a single incorrect inverse produces state corruption that
 only shows up after a specific sequence of steps. Re-derivation cannot drift, because there is
 only one code path.
@@ -77,19 +77,19 @@ For this to work the log has to be self-sufficient, so `NodeAllocated` carries `
 `slot` and `origin` alongside the value and label. Anything the picture needs that the log does not
 carry is a place where replay silently falls back on present-day state.
 
-The conformance kit compares the derived graph against `getStructure()` field by field — a `slot`
+The conformance kit compares the derived graph against `getStructure()` field by field - a `slot`
 that disagrees puts a node in the wrong place, an `origin` that disagrees gives it the wrong colour.
 
 ### Comparing versions
 
 `diffRoots` walks edges from two roots and classifies every node as shared, only-in-A, only-in-B,
-or neither. It is purely structural — nothing in it knows what a version is, which is why the same
+or neither. It is purely structural - nothing in it knows what a version is, which is why the same
 function answers "what does this version see" for a persistent tree and "what is still linked" for
 anything else. The segment tree's `compare` command calls it rather than carrying its own traversal.
 
 The renderer expresses the result through a generic three-level `emphasis` map: **primary**,
 **secondary**, **muted**. The caller decides what the levels mean; the renderer only knows one reads
-louder than the next. Shared nodes get primary, because reuse is the point of the comparison — the
+louder than the next. Shared nodes get primary, because reuse is the point of the comparison - the
 handful of differing nodes are the easy part to see.
 
 Emphasis is carried by stroke weight and dash pattern as well as opacity, so the distinction
@@ -103,7 +103,7 @@ those fixed positions.
 
 Laying out each frame independently would be the obvious approach and it is wrong: surviving nodes
 would slide sideways every time a neighbour appeared, so the picture would read as churn rather than
-as an algorithm running. The union is not the final state either — a structure that deletes nodes
+as an algorithm running. The union is not the final state either - a structure that deletes nodes
 (the stack) has a union strictly larger than anything visible at once.
 
 ### Playback
@@ -120,7 +120,7 @@ every frame. Playback pauses at the end rather than looping.
 `Timeline.append(events, label)` records a **mark** at each operation boundary, labelled with the
 console line that produced it. Coarse stepping (`nextMark`/`prevMark`) moves operation by operation;
 fine stepping moves event by event. This replaces the earlier plan to tag every event with a
-granularity level — the boundary is a property of the operation, not of its individual events, so
+granularity level - the boundary is a property of the operation, not of its individual events, so
 recording it once per `append` is both cheaper and harder to get wrong.
 
 A single `update` on a persistent segment tree is one logical operation, roughly a dozen
@@ -154,14 +154,14 @@ interface PluginInstance {
 }
 
 // A union, not optional fields: `ok` narrows to exactly one of value/error.
-// Events and stats are reported either way — a failed query may still have
+// Events and stats are reported either way - a failed query may still have
 // visited nodes worth showing.
 type OperationResult =
   | { ok: true;  value: unknown;         events: readonly SimEvent[]; statsDelta: Partial<Statistics> }
   | { ok: false; error: OperationError;  events: readonly SimEvent[]; statsDelta: Partial<Statistics> };
 
 interface EngineContext {
-  readonly rng: Rng;                      // seeded — never Math.random()
+  readonly rng: Rng;                      // seeded - never Math.random()
 }
 ```
 
@@ -171,7 +171,7 @@ emitting them as it goes, which is what keeps it synchronous and its log complet
 **Why not `build()` / `update()` / `query()`.** That shape is derived from one data structure. A
 graph plugin has no `update(index, value)`; DFS has no `query(l, r)`; Dijkstra has `run(source)`;
 KMP has `search(text, pattern)`. Fixing the method set forces every later algorithm through a
-union-typed `update()`, and the engine starts branching on plugin identity to interpret it —
+union-typed `update()`, and the engine starts branching on plugin identity to interpret it -
 exactly what the architecture forbids.
 
 Declaring commands as data means the console derives its grammar, autocomplete, validation, and
@@ -181,7 +181,7 @@ algorithm knowledge, and the leak simply moves.
 ### The two-plugin rule
 
 Phase 1 ships the persistent segment tree **and** a deliberately trivial second plugin. One plugin
-reveals zero abstraction leaks — every accidental assumption still looks like the contract. Two
+reveals zero abstraction leaks - every accidental assumption still looks like the contract. Two
 reveal most of them, cheaply.
 
 The second plugin is a **stack**: no versions, no tree, no ranges, and it *deletes* nodes. It was
@@ -207,14 +207,14 @@ Two residual compromises, both recorded rather than fixed:
   "pushes and pops". This holds for now; plugin-declared statistics are the eventual fix.
 
 `plugin-sdk` exports a conformance kit. It is handed a plugin and a script of command strings and
-derives the rest — it names no command. Fourteen checks cover metadata, spec well-formedness,
+derives the rest - it names no command. Fourteen checks cover metadata, spec well-formedness,
 JSON round-tripping of events and serialised state, determinism across fresh instances, `reset`,
 and error-versus-throw behaviour.
 
 The one that carries the most weight:
 
 > **The event log must fully describe the structure.** Replay the log through `core`'s reducer and
-> the resulting scene must match `getStructure()` exactly — same node ids, values, labels,
+> the resulting scene must match `getStructure()` exactly - same node ids, values, labels,
 > children, and roots.
 
 If a plugin mutates state without emitting an event, replay silently diverges from reality and
@@ -239,11 +239,11 @@ Three layers, not two.
 Layout hints are a closed set: `tree | dag | force | linear | grid`. The plugin says "this is a
 DAG"; layout decides where things go.
 
-Each `StructureNode` also carries a **`slot`** — an opaque grouping key — and an **`origin`**, the
+Each `StructureNode` also carries a **`slot`** - an opaque grouping key - and an **`origin`**, the
 version that allocated it. Slots are how the spike's finding survives into the contract: nodes
 sharing a slot occupy one logical position and the layout engine fans them apart, which is what
 keeps several versions of the same node aligned. The persistent segment tree uses
-`depth:lo:hi`, but layout never parses it — it only groups by equality. `origin` drives provenance
+`depth:lo:hi`, but layout never parses it - it only groups by equality. `origin` drives provenance
 colouring, so hue means "which version allocated this" without the renderer knowing what a
 version is.
 
@@ -263,7 +263,7 @@ ordering would have shuffled a B-tree's children.
 
 **The version-window question is settled: no cap, no separate diff view.** The prototype worried
 that the widest fanned slot would set the canvas width and blow up as versions accumulated. With
-per-slot widths it does not, because an update only touches `log n` slots — most slots never fan at
+per-slot widths it does not, because an update only touches `log n` slots - most slots never fan at
 all. Width comes out at roughly `(n + versions) x 66 + n x 26` pixels:
 
 | Elements | Versions | Nodes | Width |
@@ -274,7 +274,7 @@ all. Width comes out at roughly `(n + versions) x 66 + n x 26` pixels:
 | 32 | 16 | 153 | 3732 px |
 | 64 | 32 | 344 | 7476 px |
 
-Linear in both, with no overlap at any size — verified rather than reasoned. Sixty-four elements
+Linear in both, with no overlap at any size - verified rather than reasoned. Sixty-four elements
 across thirty-two versions is wide enough to need panning, but that is a camera concern, not a
 correctness one, and the earlier plan to cap displayed versions can be dropped.
 
@@ -292,7 +292,7 @@ one React component per node. AlgoVerse needs author-controlled layout, many sim
 animated transitions driven by its own clock, and eventually hundreds of nodes. DOM-per-node
 does not get there, and the migration cost rises with every phase.
 
-D3 is used for layout math only — `d3-hierarchy`, `d3-force`. It never owns the DOM.
+D3 is used for layout math only - `d3-hierarchy`, `d3-force`. It never owns the DOM.
 
 Animation is one `requestAnimationFrame` loop reading the playback clock and interpolating.
 Spring libraries animate on their own schedule, which is incompatible with frame-accurate
@@ -303,7 +303,7 @@ scrubbing; Framer Motion is fine for interface chrome and absent from the canvas
 The engine is plain TypeScript, instantiated outside React.
 
 Zustand holds only coarse interface state: current step, `isPlaying`, speed, selection, panel
-layout. The event log and per-frame animation state stay out of it — putting them in a React
+layout. The event log and per-frame animation state stay out of it - putting them in a React
 store re-renders the tree at 60 Hz. The renderer subscribes to the engine directly and mutates
 imperatively.
 
@@ -315,11 +315,11 @@ Every node exposes: unique ID, value, children, **parents**, created version, sh
 reference count, and a logical address.
 
 **Parents is a list, not a single value.** A node shared across versions genuinely has several
-parents — one per version whose spine points at it. The spike confirms this on real data: with
+parents - one per version whose spine points at it. The spike confirms this on real data: with
 three versions over eight elements, interior shared nodes have two distinct parents from
 different versions. Modelling it as a scalar makes the sharing story unrepresentable.
 
-IDs are branded types — `NodeId`, `VersionId`, `StepIndex` — not bare numbers. In a system where
+IDs are branded types - `NodeId`, `VersionId`, `StepIndex` - not bare numbers. In a system where
 nearly every value is an identifier, this costs nothing and eliminates a whole class of silent
 mix-up.
 
@@ -330,8 +330,8 @@ mix-up.
 Two different things share the word "complexity", and the original specification lists them as one.
 
 - **Declared** complexity is static, comes from `CommandSpec.complexity`, and is documentation.
-- **Measured** counters — nodes visited, comparisons, allocations, copies, shared nodes, tree
-  height — are runtime facts derived from the event log.
+- **Measured** counters - nodes visited, comparisons, allocations, copies, shared nodes, tree
+  height - are runtime facts derived from the event log.
 
 Keeping them separate enables the feature worth having: plotting measured cost against the
 theoretical curve. Seeing actual node visits track `log₂ n` is the point.
@@ -349,6 +349,47 @@ Three requirements, all cheap now:
   path from the first release. Without it, the first refactor invalidates every shared link ever
   created.
 
+These are not hygiene — they are what makes the save format below possible at all.
+
+---
+
+## 7a. Saving and sharing
+
+**A saved simulation is the list of commands, not the structure they produced.** Replaying rebuilds
+the state, the event log, the marks and the timeline, so a loaded simulation scrubs exactly like a
+fresh one. Saving the structure would restore the final picture and throw away the history — and
+would be a second source of truth, free to drift from the log. It is the same argument as
+re-derivation over inverse events, one level up.
+
+This only works because operations are deterministic, and the seed travels in the file.
+
+```ts
+interface SimulationFile {
+  schemaVersion: number;
+  pluginId: string;
+  seed: number;
+  commands: readonly string[];
+  digest: string | null;
+}
+```
+
+Only commands that **succeeded** are recorded. A rejected command changed nothing, so saving it
+would just reproduce the error on load.
+
+`PluginInstance.serialize()` is not the save format, but it is not dead either: it produces the
+**digest**. After replaying, the loader compares it against the saved one, which catches the silent
+failure a command-replay format is otherwise prone to — a plugin whose behaviour changed since the
+file was written, replaying the same script into a different structure.
+
+The digest is a **hash**, not the state. Embedding the serialised structure made a four-command
+share link 3187 characters and grew with the data rather than the script; hashing it brought the
+same link to 184. Eight hex digits of FNV-1a is ample for "this no longer behaves as it did", which
+is not an adversarial problem.
+
+A digest mismatch **warns rather than refuses**. The file is still the user's work, and opening it
+with a caveat beats refusing to open it at all. A missing plugin is a hard failure, because there is
+nothing to open.
+
 ---
 
 ## 8. Errors
@@ -357,9 +398,9 @@ Operations return errors, they do not throw them.
 
 ```ts
 type ErrorCode =
-  // owned by the parser — syntax only
+  // owned by the parser - syntax only
   | 'PARSE_ERROR' | 'UNKNOWN_COMMAND' | 'BAD_ARITY' | 'BAD_ARGUMENT'
-  // owned by the plugin — semantics, at execution time
+  // owned by the plugin - semantics, at execution time
   | 'UNKNOWN_VERSION' | 'INDEX_OUT_OF_RANGE' | 'INVALID_RANGE';
 
 interface OperationError {
@@ -394,13 +435,13 @@ interface ExplainContext {
 ```
 
 > Copy of range [2, 4), because the write to index 3 falls inside range [2, 4). Only nodes on this
-> one root-to-leaf path are copied — everything else is shared.
+> one root-to-leaf path are copied - everything else is shared.
 
 Deterministic, offline, testable, and versionable with the event schema. No generated prose,
 nothing to review at runtime.
 
 **Prose is never stored in the log.** An explainer could just as easily have run at execution time
-and stapled its output onto each event, which would have been simpler — but that puts English into
+and stapled its output onto each event, which would have been simpler - but that puts English into
 serialised state, bloats every saved simulation, and means improving a sentence requires re-running
 the algorithm. Reconstructing on demand keeps the log pure data and leaves one obvious place to add
 other languages.
@@ -410,7 +451,7 @@ without it the best available sentence is "a node was allocated". Returning `nul
 generic description, so a plugin narrates only what is worth narrating and the mechanical events
 still say something.
 
-Explanations are prose, and prose is easy to get confidently wrong — the first version of the
+Explanations are prose, and prose is easy to get confidently wrong - the first version of the
 segment tree's query explainer described ranges lying entirely outside the query as "straddling the
 edge", because it tested for *contained* and treated everything else as *partial*. Assertions that
 only check for non-empty text will not catch that. Read the output.
@@ -421,7 +462,7 @@ only check for non-empty text will not catch that. Read the output.
 
 A visualisation-first tool has to work when the visualisation does not.
 
-- The event log is readable as text — each step has a description, which the explainer already
+- The event log is readable as text - each step has a description, which the explainer already
   produces.
 - Playback and node traversal are keyboard-operable; nodes are focusable with descriptive labels.
 - No meaning carried by colour alone. Node provenance uses stroke weight and a corner marker
@@ -450,26 +491,26 @@ Three layers, in descending order of value per line:
 
 1. **Property tests against a reference model.** Run random operation sequences against both the
    real structure and a naive implementation; assert they agree. For persistent structures,
-   assert additionally that **no earlier version changes after a later update** — that invariant
+   assert additionally that **no earlier version changes after a later update** - that invariant
    is the entire reason the structure exists.
 2. **Golden-file event logs.** Snapshot the log for a fixed operation sequence. Catches
    unintended changes in what the visualisation will show, which unit tests miss entirely.
 3. **Re-derivation tests.** For every log, `state(N)` computed forward must equal `state(N)`
    reached by scrubbing backward from the end. This is what guarantees time travel is correct.
 
-The spike's model already passes (1) — 108 of 108 range queries across three versions, with v0
+The spike's model already passes (1) - 108 of 108 range queries across three versions, with v0
 unchanged after both updates.
 
 ---
 
 ## 13. Open questions
 
-- ~~**Version window.**~~ **Resolved — no cap is needed.** See [Layout](#layout) below.
+- ~~**Version window.**~~ **Resolved - no cap is needed.** See [Layout](#layout) below.
 - **Keyframe interval.** `K = 50` is a guess. Measure once real logs exist.
 - ~~**View modes.**~~ **Resolved.** `diff` is a filter over the union, not a separate layout: it
   reuses the same coordinates and only changes emphasis, so switching between comparing and
   watching never moves a node. Comparison appears whenever the replayed scene reports two or more
-  versions — driven by the data, so a structure without history simply never offers it.
+  versions - driven by the data, so a structure without history simply never offers it.
 - **License.** Not chosen. Required before any public release.
 
 ---

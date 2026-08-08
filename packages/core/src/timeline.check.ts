@@ -3,7 +3,7 @@
  *
  *     node packages/core/src/timeline.check.ts
  *
- * The segment tree below is a fixture, not core logic — it exists only to
+ * The segment tree below is a fixture, not core logic - it exists only to
  * produce a realistic event log. It moves to the plugin package once the
  * plugin contract lands.
  */

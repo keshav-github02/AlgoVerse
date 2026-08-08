@@ -42,7 +42,7 @@ export const ZERO_STATS: Statistics = {
   height: 0,
 };
 
-/** `height` is a level, not a tally — later values replace rather than add. */
+/** `height` is a level, not a tally - later values replace rather than add. */
 export function addStats(base: Statistics, delta: Partial<Statistics>): Statistics {
   return {
     versions: base.versions + (delta.versions ?? 0),
@@ -69,7 +69,7 @@ export interface SerializedState {
 }
 
 /**
- * Events and stats are reported whether the operation succeeded or not — a
+ * Events and stats are reported whether the operation succeeded or not - a
  * failed query may still have visited nodes worth showing.
  */
 export type OperationResult =
@@ -109,7 +109,7 @@ export interface ExplainContext {
 /**
  * Why an event happened, in the algorithm's own terms.
  *
- * A pure function of the event and the surrounding state — never generated at
+ * A pure function of the event and the surrounding state - never generated at
  * execution time and stored. Keeping prose out of the log means the log stays
  * serialisable data, explanations can be rewritten without re-running anything,
  * and there is one obvious place to add other languages later.

@@ -67,7 +67,7 @@ check('nextMark from the last mark runs to the end',
   (() => { p.seek((p.marks[2] as { index: number }).index); p.nextMark(); return p.step === p.length; })());
 check('currentMark names the operation in progress',
   (() => { p.seek(1); return p.currentMark()?.label === 'push 10'; })(),
-  (() => { p.seek(1); return p.currentMark()?.label ?? '—'; })());
+  (() => { p.seek(1); return p.currentMark()?.label ?? '-'; })());
 
 /* ── The clock ─────────────────────────────────────────────────────── */
 

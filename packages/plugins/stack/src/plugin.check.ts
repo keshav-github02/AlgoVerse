@@ -89,7 +89,7 @@ const scene = layout(struct);
 check('the stack lays out as a single column',
   new Set(scene.nodes.map((n) => n.x)).size === 1,
   `${Math.round(scene.width)} x ${Math.round(scene.height)} px`);
-// Being on top is being the root, not a role — which cell is on top changes
+// Being on top is being the root, not a role - which cell is on top changes
 // with every push, and a node's role is fixed when it is allocated.
 check('the most recent push is drawn on top', (() => {
   const top = scene.nodes.find((n) => n.node.id === struct.roots[0]);

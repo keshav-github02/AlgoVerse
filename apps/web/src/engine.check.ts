@@ -4,10 +4,12 @@
  *     node apps/web/src/engine.check.ts
  *
  * `engine.ts` deliberately touches no DOM API, which is what makes this
- * possible — and is the same property that keeps the event log out of React.
+ * possible - and is the same property that keeps the event log out of React.
  */
 
-import { describeEvent, type NodeId } from '@algoverse/core';
+import {
+  decodeSimulation, describeEvent, encodeSimulation, fingerprint, type NodeId,
+} from '@algoverse/core';
 import { PLUGINS, Session } from './engine.ts';
 import { computeDiff } from './diff.ts';
 
@@ -252,6 +254,93 @@ check('a plugin without an explainer still describes events', (() => {
   b.run('push 5');
   b.playback.seek(1);
   return b.explanation() === describeEvent(b.currentEvent());
+})());
+
+/* ── Save and load ─────────────────────────────────────────────────── */
+
+console.log('\nsave and load');
+
+const saved = new Session(segTree);
+for (const line of ['build [3 1 4 1 5 9 2 6]', 'update v0 3 10', 'update v1 6 7', 'query v1 2 5']) {
+  saved.run(line);
+}
+const file = saved.toFile();
+
+check('the file records the script, not the structure', file.commands.length === 4,
+  `${file.commands.length} commands, ${encodeSimulation(file).length} characters encoded`);
+check('the file names its plugin and seed',
+  file.pluginId === 'persistent-segment-tree' && file.seed === 1);
+
+const reopened = Session.load(file, PLUGINS);
+check('loading succeeds without warning', !('code' in reopened) && reopened.warning === null,
+  'code' in reopened ? reopened.message : (reopened.warning ?? 'clean'));
+
+if (!('code' in reopened)) {
+  const back = reopened.session;
+  check('the whole timeline comes back, not just the final state',
+    back.playback.length === saved.playback.length,
+    `${back.playback.length} events`);
+  check('marks survive, so a loaded run still steps by operation',
+    back.playback.marks.length === saved.playback.marks.length);
+  check('the structure is identical',
+    JSON.stringify(back.view().state.nodes.size) === JSON.stringify(saved.view().state.nodes.size)
+    && back.view().state.versions.length === saved.view().state.versions.length);
+  check('statistics are rebuilt',
+    JSON.stringify(back.stats) === JSON.stringify(saved.stats));
+  check('a loaded simulation scrubs to identical intermediate states', (() => {
+    for (let step = 0; step <= saved.playback.length; step += 1) {
+      saved.playback.seek(step);
+      back.playback.seek(step);
+      if (fingerprint(saved.view().state) !== fingerprint(back.view().state)) return false;
+    }
+    return true;
+  })(), `${saved.playback.length + 1} steps`);
+  check('explanations survive the round trip', (() => {
+    saved.playback.seek(37);
+    back.playback.seek(37);
+    return saved.explanation() === back.explanation() && saved.explanation().length > 20;
+  })());
+  saved.playback.last();
+}
+
+check('a failed command is not saved', (() => {
+  const withError = new Session(segTree);
+  withError.run('build [1 2 3 4]');
+  withError.run('query v9 0 1');
+  withError.run('nonsense');
+  return withError.toFile().commands.length === 1;
+})());
+
+check('an unknown plugin is refused with a useful message', (() => {
+  const alien = { ...file, pluginId: 'red-black-tree' };
+  const r = Session.load(alien, PLUGINS);
+  return 'code' in r && r.message.includes('red-black-tree') && (r.hint ?? '').includes('stack');
+})());
+
+check('a digest mismatch warns but still opens', (() => {
+  const tampered = { ...file, digest: 'deadbeef' };
+  const r = Session.load(tampered, PLUGINS);
+  return !('code' in r) && r.warning !== null && r.warning.includes('changed since');
+})());
+
+check('a save with no digest loads cleanly', (() => {
+  const r = Session.load({ ...file, digest: null }, PLUGINS);
+  return !('code' in r) && r.warning === null;
+})());
+
+check('the round trip survives encoding', (() => {
+  const decoded = decodeSimulation(encodeSimulation(file));
+  if (!decoded.ok) return false;
+  const r = Session.load(decoded.file, PLUGINS);
+  return !('code' in r) && r.session.playback.length === saved.playback.length;
+})());
+
+check('the other plugin round-trips too', (() => {
+  const st = new Session(stackPlugin);
+  for (const line of ['push 3', 'push 7', 'pop', 'push 9']) st.run(line);
+  const r = Session.load(st.toFile(), PLUGINS);
+  return !('code' in r) && r.warning === null
+    && r.session.view().scene.nodes.length === st.view().scene.nodes.length;
 })());
 
 /* ── The other plugin ──────────────────────────────────────────────── */

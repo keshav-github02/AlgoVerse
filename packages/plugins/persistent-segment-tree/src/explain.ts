@@ -44,7 +44,7 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
       if (command === 'build') {
         return size(r) === 1
           ? `Leaf for ${span(r)} holds the array value ${event.value}.`
-          : `Internal node for ${span(r)} stores ${event.value}, the sum of its two children — ` +
+          : `Internal node for ${span(r)} stores ${event.value}, the sum of its two children - ` +
             `so any query covering the whole range can stop here.`;
       }
       const idx = argOf(ctx, 'index', 'int');
@@ -56,7 +56,7 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
         ? `New leaf for ${span(r)} holding ${event.value}. The old leaf still belongs to ` +
           `v${from ?? 0}, which is why that version is unchanged.`
         : `Copy of ${span(r)}, because ${because}. Only nodes on this one root-to-leaf ` +
-          `path are copied — everything else is shared.`;
+          `path are copied - everything else is shared.`;
     }
 
     case 'NodeReused': {
@@ -73,13 +73,13 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
       const where = r === null ? 'a node' : span(r);
 
       if (command === 'compare') {
-        return `${where} is reachable from both versions — the same node, not a copy.`;
+        return `${where} is reachable from both versions - the same node, not a copy.`;
       }
       if (command === 'update') {
         const idx = argOf(ctx, 'index', 'int');
         if (idx === null) return `Walking down through ${where}.`;
         if (r !== null && size(r) === 1) {
-          return `Arrived at index ${idx} — the leaf actually being written. ` +
+          return `Arrived at index ${idx} - the leaf actually being written. ` +
             `The descent copied one node per level to get here.`;
         }
         return `Descending through ${where} on the way to index ${idx}. Every node on this ` +
@@ -98,7 +98,7 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
       }
       if (lo <= r.lo && r.hi <= hi) {
         return `${where} sits entirely inside [${lo}, ${hi}), so its stored sum is taken ` +
-          `whole and the descent stops here — this is why a query touches O(log n) nodes ` +
+          `whole and the descent stops here - this is why a query touches O(log n) nodes ` +
           `rather than the whole range.`;
       }
       return `${where} only partly overlaps [${lo}, ${hi}), so the search must descend ` +
@@ -108,7 +108,7 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
     case 'VersionCommitted': {
       const fresh = [...ctx.after.nodes.values()].filter((n) => n.origin === event.version).length;
       if (event.version === 0) {
-        return `Version 0 is complete with ${fresh} nodes — 2n−1 for n leaves.`;
+        return `Version 0 is complete with ${fresh} nodes - 2n−1 for n leaves.`;
       }
       return `Version ${event.version} is complete. It allocated ${fresh} nodes and shares ` +
         `everything else with v${event.version - 1}, which remains readable and unchanged.`;
@@ -120,7 +120,7 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
       const parent = ctx.after.nodes.get(event.from);
       if (child === undefined || parent === undefined) return null;
       if (child.origin < parent.origin) {
-        return `The new node borrows v${child.origin}'s ${event.slot} subtree wholesale — ` +
+        return `The new node borrows v${child.origin}'s ${event.slot} subtree wholesale - ` +
           `one pointer instead of a copy.`;
       }
       return `The new node links to its freshly copied ${event.slot} child.`;

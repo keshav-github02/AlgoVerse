@@ -7,6 +7,9 @@ import { Console } from './components/Console.tsx';
 import { Inspector, Stats } from './components/Inspector.tsx';
 import { DiffPanel } from './components/Diff.tsx';
 import { computeDiff } from './diff.ts';
+import {
+  autosave, clearAutosave, clearUrl, copy, readAutosave, readFromUrl, shareLink, urlError,
+} from './persist.ts';
 
 const BTN = 'rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 font-mono text-[11px] ' +
   'text-[var(--text)] hover:border-[var(--faint)] focus-visible:outline focus-visible:outline-2 ' +
@@ -34,14 +37,47 @@ export function App(): JSX.Element {
   } = useUi();
   const [epoch, setEpoch] = useState(0);
 
+  const [notice, setNotice] = useState<string | null>(null);
+
   const plugin = PLUGINS.find((p) => p.meta.id === pluginId) ?? (PLUGINS[0] as typeof PLUGINS[number]);
+
+  /**
+   * A shared link or an autosave wins over a blank session, but only on the
+   * very first render - reloading state on every plugin change would silently
+   * undo the user's choice.
+   */
+  const [restored] = useState(() => {
+    const file = readFromUrl() ?? readAutosave();
+    if (file === null) return null;
+    const loaded = Session.load(file, PLUGINS);
+    return 'code' in loaded ? { session: null, message: loaded.message } : loaded;
+  });
+
   // A new Session per plugin (and per reset); the engine object itself is the
   // source of truth, so React only ever holds a reference to it.
-  const session = useMemo(() => new Session(plugin), [plugin, epoch]);
+  const session = useMemo(
+    () => (epoch === 0 && restored?.session?.plugin === plugin ? restored.session : new Session(plugin)),
+    [plugin, epoch, restored],
+  );
 
   useSyncExternalStore(session.subscribe, session.getVersion, session.getVersion);
 
   const { playback } = session;
+
+  useEffect(() => {
+    const failed = urlError();
+    if (failed !== null) { setNotice(failed); return; }
+    if (restored === null) return;
+    if (restored.session === null) { setNotice(restored.message ?? null); return; }
+    if (restored.warning !== null && restored.warning !== undefined) setNotice(restored.warning);
+    if (restored.session.plugin.meta.id !== pluginId) setPlugin(restored.session.plugin.meta.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave whatever is on screen, so a refresh does not lose the session.
+  useEffect(() => {
+    if (session.script.length > 0) autosave(session.toFile());
+  }, [session, session.getVersion()]);
 
   // The animation loop lives here, not inside Playback: the engine is told how
   // much time passed, it never reads a clock itself.
@@ -79,7 +115,7 @@ export function App(): JSX.Element {
     : null;
 
   return (
-    <div className="grid h-screen grid-rows-[auto_minmax(0,1fr)] gap-2 bg-[var(--bg)] p-2 text-[var(--text)]">
+    <div className="grid h-screen grid-rows-[auto_auto_minmax(0,1fr)] gap-2 bg-[var(--bg)] p-2 text-[var(--text)]">
       <header className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2">
         <strong className="text-sm font-semibold">AlgoVerse</strong>
         <span className="font-mono text-[11px] text-[var(--faint)]">{plugin.meta.name}</span>
@@ -110,6 +146,16 @@ export function App(): JSX.Element {
           {[0.5, 1, 2, 4, 8].map((s) => <option key={s} value={s}>{s}x</option>)}
         </select>
       </header>
+
+      {notice !== null && (
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-xs text-[var(--dim)]"
+        >
+          <span className="min-w-0 flex-1 break-all">{notice}</span>
+          <button className={BTN} onClick={() => setNotice(null)}>dismiss</button>
+        </div>
+      )}
 
       <div className="grid min-h-0 grid-cols-[190px_minmax(0,1fr)_260px] gap-2">
         <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2">
@@ -152,7 +198,7 @@ export function App(): JSX.Element {
               <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">Canvas</span>
               <span className="font-mono text-[10.5px] text-[var(--dim)]">
                 {mode === 'diff' && diff !== null
-                  ? `v${diffA} vs v${Math.min(diffB, versions.length - 1)} — ${diff.diff.shared.length} shared`
+                  ? `v${diffA} vs v${Math.min(diffB, versions.length - 1)} - ${diff.diff.shared.length} shared`
                   : describeEvent(session.currentEvent())}
               </span>
               <div className="flex items-center gap-3">
@@ -180,7 +226,21 @@ export function App(): JSX.Element {
           <section className="flex min-h-0 flex-col rounded-lg border border-[var(--line)] bg-[var(--panel)]">
             <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">Console</span>
-              <button className={BTN} onClick={() => { select(null); setEpoch((e) => e + 1); }}>reset</button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  className={BTN}
+                  disabled={session.script.length === 0}
+                  onClick={() => {
+                    const link = shareLink(session.toFile());
+                    void copy(link).then((ok) => setNotice(
+                      ok ? `Link copied - ${link.length} characters.` : link,
+                    ));
+                  }}
+                >share</button>
+                <button className={BTN} onClick={() => {
+                  select(null); clearAutosave(); clearUrl(); setNotice(null); setEpoch((e) => e + 1);
+                }}>reset</button>
+              </div>
             </div>
             <div className="min-h-0 flex-1">
               <Console session={session} onRun={(line) => session.run(line)} />

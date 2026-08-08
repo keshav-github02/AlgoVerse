@@ -22,6 +22,15 @@ export {
 
 export { describeEvent } from './explain.ts';
 
+export {
+  SIMULATION_SCHEMA,
+  decodeSimulation,
+  digestOf,
+  encodeSimulation,
+  type DecodeResult,
+  type SimulationFile,
+} from './simulation.ts';
+
 export { BASE_RATE, Playback } from './playback.ts';
 
 export { createRng, type Rng } from './rng.ts';

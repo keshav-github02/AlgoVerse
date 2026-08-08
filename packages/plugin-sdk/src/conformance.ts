@@ -1,7 +1,7 @@
 /**
  * The conformance kit. Every plugin runs it.
  *
- * These checks are generic — the kit is handed a plugin and a script of
+ * These checks are generic - the kit is handed a plugin and a script of
  * command strings, and derives everything else. It never names a command.
  */
 
@@ -48,7 +48,7 @@ function runScript(
 /**
  * The event log must fully describe the structure. If a plugin mutates state
  * without emitting an event, replay diverges from reality and time travel is
- * silently broken — this is what catches it.
+ * silently broken - this is what catches it.
  */
 function logDescribesStructure(events: readonly SimEvent[], structure: StructureGraph): string | null {
   const tl = new Timeline();

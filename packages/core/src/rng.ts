@@ -14,7 +14,7 @@ export interface Rng {
   nextInt(lo: number, hi: number): number;
 }
 
-/** mulberry32 — small, fast, and good enough for layout and structure decisions. */
+/** mulberry32 - small, fast, and good enough for layout and structure decisions. */
 export function createRng(seed: number): Rng {
   let s = seed >>> 0;
   const next = (): number => {

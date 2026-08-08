@@ -17,7 +17,7 @@ export const explainStack: Explainer = (event: SimEvent, ctx: ExplainContext): s
 
     case 'PointerSet':
       if (event.to === null) return `The removed cell drops its link so nothing points into freed memory.`;
-      return `The new cell points down at the previous top — a stack is a chain, and only the ` +
+      return `The new cell points down at the previous top - a stack is a chain, and only the ` +
         `head of it moves.`;
 
     case 'NodeDeleted': {
@@ -30,7 +30,7 @@ export const explainStack: Explainer = (event: SimEvent, ctx: ExplainContext): s
 
     case 'NodeVisited':
       return ctx.command?.name === 'peek'
-        ? `Peek reads the top cell and changes nothing — which is why it counts as a read, not a write.`
+        ? `Peek reads the top cell and changes nothing - which is why it counts as a read, not a write.`
         : `The top cell is read before being removed.`;
 
     case 'RootsSet':

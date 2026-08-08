@@ -3,7 +3,7 @@
 # fully rewritten the moment another machine or CI touches it.
 * text=auto eol=lf
 
-# Binary assets — never normalise or diff these as text.
+# Binary assets - never normalise or diff these as text.
 *.png   binary
 *.jpg   binary
 *.jpeg  binary

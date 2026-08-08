@@ -21,7 +21,7 @@ export type SceneElement =
 
 /**
  * Relative weight of a node in the current view. The caller decides what the
- * levels mean — the renderer only knows one reads louder than the next.
+ * levels mean - the renderer only knows one reads louder than the next.
  */
 export type Emphasis = 'primary' | 'secondary' | 'muted';
 

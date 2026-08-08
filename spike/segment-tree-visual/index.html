@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AlgoVerse — Structural Sharing Spike</title>
+<title>AlgoVerse - Structural Sharing Spike</title>
 <style>
 /* ── Palette values defined once, mapped per theme ─────────────────── */
 :root{
@@ -21,7 +21,7 @@
   --d-v0:#5B93F0;      --d-v1:#E3A94A;      --d-v2:#C878DC;
   --d-good:#4BC38C;    --d-glass:rgba(219,227,235,.05);
 
-  /* active mapping — light by default */
+  /* active mapping - light by default */
   --bg:var(--l-bg);       --panel:var(--l-panel);   --panel2:var(--l-panel2);
   --line:var(--l-line);   --line2:var(--l-line2);   --text:var(--l-text);
   --dim:var(--l-dim);     --faint:var(--l-faint);   --node:var(--l-node);
@@ -156,7 +156,7 @@ dd.accent{font-weight:600}
     <h1>Structural sharing in a persistent segment tree</h1>
     <p class="lede">Three versions over <code>[3, 1, 4, 1, 5, 9, 2, 6]</code>. Every update
     allocates a fresh root-to-leaf path and reuses the rest of the previous tree, so a version
-    is not a copy — it is a new spine threaded through old memory. Hue tells you which version
+    is not a copy - it is a new spine threaded through old memory. Hue tells you which version
     allocated a node; a blue node under an amber root <em>is</em> the reuse.</p>
   </header>
 
@@ -184,12 +184,12 @@ dd.accent{font-weight:600}
       </section>
       <section class="card">
         <h2>Cost of 3 versions</h2>
-        <div class="big"><span class="n" id="saveN">—</span><span class="lbl" id="saveL">memory saved vs full copies</span></div>
+        <div class="big"><span class="n" id="saveN">-</span><span class="lbl" id="saveL">memory saved vs full copies</span></div>
         <div class="bar-meter"><i id="meter" style="width:0"></i></div>
         <dl>
-          <dt>Nodes stored</dt><dd id="cTot">—</dd>
-          <dt>Naive full copies</dt><dd id="cNaive">—</dd>
-          <dt>Growth per update</dt><dd id="cGrow">—</dd>
+          <dt>Nodes stored</dt><dd id="cTot">-</dd>
+          <dt>Naive full copies</dt><dd id="cNaive">-</dd>
+          <dt>Growth per update</dt><dd id="cGrow">-</dd>
         </dl>
       </section>
     </aside>
@@ -201,7 +201,7 @@ dd.accent{font-weight:600}
   readable once versions overlap, whether dashed pointers read as reuse or as noise, and whether the
   eight Memory Inspector fields are enough to explain a node without extra prose. Layout places
   <em>y</em> by tree depth and <em>x</em> by range midpoint, so nodes covering the same range land in
-  one slot and fan apart. Throwaway — the real renderer replaces it.</p>
+  one slot and fan apart. Throwaway - the real renderer replaces it.</p>
 
 </div>
 
@@ -269,7 +269,7 @@ for (const nd of nodes.values())
 
 /* ── Layout ────────────────────────────────────────────────────────── */
 /* FAN > NW so version copies sharing a slot sit side by side rather than
-   stacking — union mode is unreadable otherwise. LEAF_W must clear the widest
+   stacking - union mode is unreadable otherwise. LEAF_W must clear the widest
    fanned leaf slot (2 copies) plus a gap. */
 const LEAF_W = 134, LEVEL_H = 126, MX = 62, MY = 42;
 const NW = 58, NH = 46, FAN = 64;
@@ -454,7 +454,7 @@ function paint() {
       drow("Live in", [...nd.vers].map(v => VERSIONS[v].id).join(" ")) +
       drow("Shared count", nd.vers.size) +
       drow("Ref count", nd.parents.length) +
-      drow("Children", kids.length ? kids.map(k => "#" + k).join(" ") : "—") +
+      drow("Children", kids.length ? kids.map(k => "#" + k).join(" ") : "-") +
       drow("Parents", nd.parents.length ? nd.parents.map(p => "#" + p).join(" ") : "root") +
       "</dl>";
   }

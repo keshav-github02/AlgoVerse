@@ -1,7 +1,7 @@
 /**
  * Version comparison.
  *
- * Appears whenever the replayed scene has two or more versions — driven by the
+ * Appears whenever the replayed scene has two or more versions - driven by the
  * data, not by knowing that some plugin has a `compare` command. A structure
  * without history never shows it.
  */

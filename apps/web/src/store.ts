@@ -2,7 +2,7 @@
  * UI state only.
  *
  * Which plugin is loaded, what is selected, what is shown. The event log and
- * the current scene deliberately live in the engine — see `engine.ts`.
+ * the current scene deliberately live in the engine - see `engine.ts`.
  */
 
 import { create } from 'zustand';

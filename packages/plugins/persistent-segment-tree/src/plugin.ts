@@ -102,7 +102,7 @@ class Instance implements PluginInstance {
 
   #versions(): string {
     return this.#roots.length === 0
-      ? 'nothing is built yet — start with build'
+      ? 'nothing is built yet - start with build'
       : `versions available: ${this.#roots.map((_, i) => `v${i}`).join(', ')}`;
   }
 
@@ -263,7 +263,7 @@ class Instance implements PluginInstance {
     if (!('id' in rb)) return failed(rb);
 
     // Reachability is structural, so it lives in core rather than being
-    // re-implemented per plugin — and the diff view uses the same function.
+    // re-implemented per plugin - and the diff view uses the same function.
     const diff = diffRoots(this.getStructure(), ra.id, rb.id);
     const shared = diff.shared;
     return {

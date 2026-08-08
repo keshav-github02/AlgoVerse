@@ -2,7 +2,7 @@
  * Stack.
  *
  * This plugin exists to keep the contract honest. It has no versions, no
- * tree, no ranges, and it *deletes* nodes — nothing the persistent segment
+ * tree, no ranges, and it *deletes* nodes - nothing the persistent segment
  * tree needed. Anything the contract assumed about trees or history shows up
  * here as a workaround.
  */

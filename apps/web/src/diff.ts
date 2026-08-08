@@ -1,6 +1,6 @@
 /**
  * Version comparison logic, kept out of the component so it can be checked
- * without a browser — and so the rule below lives somewhere testable.
+ * without a browser - and so the rule below lives somewhere testable.
  */
 
 import {
@@ -17,7 +17,7 @@ export interface DiffResult {
 }
 
 /**
- * Shared nodes read loudest. The reuse is the point of the comparison — the
+ * Shared nodes read loudest. The reuse is the point of the comparison - the
  * handful of nodes that differ are the cheap part to see.
  */
 export function computeDiff(

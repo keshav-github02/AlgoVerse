@@ -65,7 +65,7 @@ export function Scene({ scene, visited, selected, showLabels, emphasis, onSelect
   if (scene.nodes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs italic text-[var(--faint)]">
-        Nothing built yet — run a command below.
+        Nothing built yet - run a command below.
       </div>
     );
   }

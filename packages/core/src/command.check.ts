@@ -45,7 +45,7 @@ const check = (name: string, ok: boolean, detail = ''): void => {
 const render = (input: string, e: OperationError): string => {
   const [s, t] = e.span ?? [input.length, input.length];
   const caret = `${' '.repeat(s)}${'^'.repeat(Math.max(1, t - s))}`;
-  return `      ${input}\n      ${caret}\n      ${e.code}: ${e.message}\n      hint: ${e.hint ?? '—'}`;
+  return `      ${input}\n      ${caret}\n      ${e.code}: ${e.message}\n      hint: ${e.hint ?? '-'}`;
 };
 
 /* ── 1. Valid input ────────────────────────────────────────────────── */

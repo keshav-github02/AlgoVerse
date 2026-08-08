@@ -1,7 +1,7 @@
 /**
  * Command parsing.
  *
- * The parser is handed `CommandSpec[]` and derives everything from it —
+ * The parser is handed `CommandSpec[]` and derives everything from it -
  * grammar, arity, argument types, usage strings, help text, completions.
  * It contains no command names. If a command name appears anywhere in this
  * file, the abstraction has leaked.
@@ -26,7 +26,7 @@ export interface CommandSpec {
 
 /**
  * The first four codes are the parser's. The rest belong to a plugin at
- * execution time — the parser validates that `v3` is shaped like a version
+ * execution time - the parser validates that `v3` is shaped like a version
  * reference, never that version 3 exists.
  */
 export type ErrorCode =
@@ -38,7 +38,9 @@ export type ErrorCode =
   | 'INDEX_OUT_OF_RANGE'
   | 'INVALID_RANGE'
   /** The structure is not in a state where this operation makes sense. */
-  | 'PRECONDITION_FAILED';
+  | 'PRECONDITION_FAILED'
+  /** A saved simulation cannot be read by this build. */
+  | 'INCOMPATIBLE_SAVE';
 
 export interface OperationError {
   readonly code: ErrorCode;
@@ -235,7 +237,7 @@ function consume(
         if (t === undefined) {
           return {
             ok: false,
-            error: fail('PARSE_ERROR', 'Unclosed "[" — the list needs a closing "]".', [token.start, token.end], hint),
+            error: fail('PARSE_ERROR', 'Unclosed "[" - the list needs a closing "]".', [token.start, token.end], hint),
           };
         }
         if (t.text === ']') {

@@ -13,7 +13,7 @@ export type NodeId = number & { readonly __brand: unique symbol };
 export type SimEvent =
   /**
    * Carries everything needed to draw the node. The log has to be sufficient
-   * on its own — if the picture needed to ask the plugin for anything, replay
+   * on its own - if the picture needed to ask the plugin for anything, replay
    * would not be a faithful reconstruction.
    */
   | {
@@ -50,7 +50,7 @@ export interface SceneNode {
 export interface SceneState {
   readonly nodes: ReadonlyMap<NodeId, SceneNode>;
   readonly reuseCount: ReadonlyMap<NodeId, number>;
-  /** Times each node was touched by a traversal — the measured cost of an operation. */
+  /** Times each node was touched by a traversal - the measured cost of an operation. */
   readonly visits: ReadonlyMap<NodeId, number>;
   /** Where a renderer starts walking. Replaced wholesale, not accumulated. */
   readonly roots: readonly NodeId[];

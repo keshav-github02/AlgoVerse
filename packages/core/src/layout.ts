@@ -2,7 +2,7 @@
  * Layout: semantic structure in, coordinates out.
  *
  * Sits between the plugin and the renderer so plugins never do pixel maths
- * and the renderer never learns what a version is. Slots are opaque here —
+ * and the renderer never learns what a version is. Slots are opaque here -
  * layout compares them, it never parses them.
  *
  * Deterministic: the same graph and options always give the same coordinates.
@@ -253,7 +253,7 @@ function gridded(graph: StructureGraph, o: LayoutOptions): PositionedScene {
 }
 
 /**
- * Placeholder for 'force'. Deterministic ring placement — readable for small
+ * Placeholder for 'force'. Deterministic ring placement - readable for small
  * graphs, but no relaxation happens. Replace before shipping graph algorithms.
  */
 function ringed(graph: StructureGraph, o: LayoutOptions): PositionedScene {

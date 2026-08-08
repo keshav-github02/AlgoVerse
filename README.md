@@ -3,7 +3,7 @@
 > The VS Code for Algorithms and Data Structures.
 
 An interactive simulation platform for understanding algorithms and data structures from the
-inside. Not a gallery of animations — a debugger. Build a structure, run an operation, then step
+inside. Not a gallery of animations - a debugger. Build a structure, run an operation, then step
 through every internal change, inspect memory, scrub the timeline, and compare versions.
 
 ## Status
@@ -55,7 +55,7 @@ Four packages, split along the seams that actually matter:
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
 | `plugins/*` | One package per algorithm or data structure | segment tree + stack |
-| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera — nothing else | SVG working |
+| `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
 
@@ -65,7 +65,7 @@ math; the renderer stays free of algorithm knowledge.
 
 The simulation engine contains no algorithm-specific logic, and the console derives its grammar,
 autocomplete, and help text from each plugin's declared commands. Adding an algorithm means
-adding a plugin — no engine changes.
+adding a plugin - no engine changes.
 
 See [docs/architecture.md](docs/architecture.md) for the plugin contract, the event model, and
 the reasoning behind each decision.
@@ -89,11 +89,11 @@ algoverse/
 
 | Phase | Scope |
 | --- | --- |
-| 1 | Persistent segment tree — build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
+| 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
 | 2 | Persistent BIT, trie, BST, treap |
 | 3 | AVL, red-black, B-tree, B+ tree, splay |
-| 4 | Graphs — DFS, BFS, Dijkstra, Prim, Kruskal, SCC, bridges, articulation points |
-| 5 | Strings — KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
+| 4 | Graphs - DFS, BFS, Dijkstra, Prim, Kruskal, SCC, bridges, articulation points |
+| 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
 | 6 | Heavy-light decomposition, Euler tour tree, link-cut tree, merge sort tree, wavelet tree, Li Chao tree |
 
 Phase 1 also ships a deliberately trivial second plugin. One plugin proves nothing about an
@@ -103,7 +103,7 @@ abstraction; two expose most of its leaks.
 
 In use today: React, TypeScript, Vite, Tailwind CSS and Zustand, on pnpm workspaces. Rendering is
 hand-written SVG behind a renderer interface. Tests are plain TypeScript files run directly by Node
-— every package exposes `check`.
+- every package exposes `check`.
 
 Deliberately not yet adopted, to keep the dependency surface honest:
 
@@ -115,13 +115,14 @@ Deliberately not yet adopted, to keep the dependency surface honest:
 | shadcn/ui | Only a handful of controls exist so far |
 | D3 | Layout is hand-written; `d3-hierarchy` becomes worthwhile at force-directed graphs |
 
-Phase 1 runs entirely in the browser. Saves to local storage and URL-compressed sharing are still
-to come; a backend arrives only when accounts or collaboration require one.
+Phase 1 runs entirely in the browser. A session autosaves to local storage, and **share** puts the
+whole thing in a link — the commands, not the structure, so replaying restores the full timeline. A
+backend arrives only when accounts or collaboration require one.
 
 ## Contributing
 
 The plugin contract is the extension point. A new algorithm should need no changes to `core`,
-`renderer`, or `apps/web` — if it does, the contract is wrong and that is the bug worth fixing.
+`renderer`, or `apps/web` - if it does, the contract is wrong and that is the bug worth fixing.
 
 Engine changes need tests. Two kinds carry the weight: golden-file snapshots of event logs, and
 property tests that check a structure against a naive reference model over random operation

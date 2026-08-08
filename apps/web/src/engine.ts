@@ -7,9 +7,11 @@
  */
 
 import {
-  Playback, Timeline, createRng, describeEvent, layout, parseCommand, sceneToStructure,
+  Playback, SIMULATION_SCHEMA, Timeline, createRng, describeEvent, digestOf, layout,
+  parseCommand,
+  sceneToStructure,
   type LayoutHint, type NodeId, type OperationError, type ParsedCommand,
-  type PositionedScene, type SceneState, type SimEvent,
+  type PositionedScene, type SceneState, type SimEvent, type SimulationFile,
 } from '@algoverse/core';
 import {
   ZERO_STATS, addStats,
@@ -48,10 +50,14 @@ export class Session {
   #stable: PositionedScene;
   #version = 0;
   #listeners = new Set<() => void>();
+  /** Commands that actually ran, in order - this is the save format. */
+  #script: string[] = [];
+  readonly #seed: number;
 
-  constructor(plugin: AlgorithmPlugin) {
+  constructor(plugin: AlgorithmPlugin, seed = 1) {
     this.plugin = plugin;
-    this.#instance = plugin.createInstance({ rng: createRng(1) });
+    this.#seed = seed;
+    this.#instance = plugin.createInstance({ rng: createRng(seed) });
     this.#hint = this.#instance.getStructure().layout;
     this.#stable = layout(sceneToStructure(this.#timeline.stateAt(0), this.#hint));
     this.playback = new Playback(this.#timeline);
@@ -60,6 +66,14 @@ export class Session {
 
   get layoutHint(): LayoutHint {
     return this.#hint;
+  }
+
+  get script(): readonly string[] {
+    return this.#script;
+  }
+
+  get seed(): number {
+    return this.#seed;
   }
 
   get history(): readonly HistoryEntry[] {
@@ -77,7 +91,7 @@ export class Session {
     };
   };
 
-  /** Snapshot for useSyncExternalStore — a counter, not an object. */
+  /** Snapshot for useSyncExternalStore - a counter, not an object. */
   getVersion = (): number => this.#version;
 
   #bump(): void {
@@ -99,6 +113,9 @@ export class Session {
     const result = this.#instance.execute(parsed.command);
     this.#timeline.append(result.events, trimmed);
     if (result.events.length > 0) this.#commands.push(parsed.command);
+    // Only successful commands are worth replaying; a rejected one changed
+    // nothing, so putting it in the save would just reproduce the error.
+    if (result.ok) this.#script.push(trimmed);
     this.#events.push(...result.events);
     this.#stats = addStats(this.#stats, result.statsDelta);
     this.#history.push(
@@ -117,6 +134,7 @@ export class Session {
     this.#timeline = new Timeline();
     this.#events = [];
     this.#commands = [];
+    this.#script = [];
     this.#history = [];
     this.#stats = ZERO_STATS;
     this.#relayout();
@@ -153,6 +171,59 @@ export class Session {
   /** What the last event did, for the status line. */
   currentEvent(): SimEvent | undefined {
     return this.#timeline.eventAt(this.playback.step - 1);
+  }
+
+  /* ── Saving ──────────────────────────────────────────────────────── */
+
+  toFile(): SimulationFile {
+    return {
+      schemaVersion: SIMULATION_SCHEMA,
+      pluginId: this.plugin.meta.id,
+      seed: this.#seed,
+      commands: [...this.#script],
+      digest: digestOf(this.#instance.serialize()),
+    };
+  }
+
+  /**
+   * Rebuild by replaying. The whole timeline comes back, so a loaded
+   * simulation scrubs exactly like a fresh one.
+   *
+   * Returns a warning rather than failing when the replayed state disagrees
+   * with the digest: the file is still the user's work, and refusing to open
+   * it would be worse than opening it with a caveat.
+   */
+  static load(
+    file: SimulationFile,
+    plugins: readonly AlgorithmPlugin[],
+  ): { session: Session; warning: string | null } | OperationError {
+    const plugin = plugins.find((p) => p.meta.id === file.pluginId);
+    if (plugin === undefined) {
+      return {
+        code: 'PARSE_ERROR',
+        message: `This simulation needs the "${file.pluginId}" structure, which this build does not have.`,
+        hint: `available: ${plugins.map((p) => p.meta.id).join(', ')}`,
+      };
+    }
+
+    const session = new Session(plugin, file.seed);
+    for (const line of file.commands) session.run(line);
+
+    const rejected = session.history.filter((h) => !h.ok).length;
+    if (rejected > 0) {
+      return {
+        session,
+        warning: `${rejected} of ${file.commands.length} saved commands no longer run.`,
+      };
+    }
+    if (file.digest !== null && digestOf(session.#instance.serialize()) !== file.digest) {
+      return {
+        session,
+        warning: 'Replaying produced a different structure than when this was saved - '
+          + 'the algorithm has changed since.',
+      };
+    }
+    return { session, warning: null };
   }
 
   /**

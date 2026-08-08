@@ -1,5 +1,5 @@
 /**
- * How a plugin describes its structure — semantically, never in pixels.
+ * How a plugin describes its structure - semantically, never in pixels.
  *
  * This lives in core rather than plugin-sdk because layout and the renderer
  * both consume it, and neither may depend on the plugin contract.
@@ -16,7 +16,7 @@ export interface StructureNode {
   readonly role: string;
   readonly depth: number;
   /**
-   * Layout grouping key, opaque to layout — it only ever tests slots for
+   * Layout grouping key, opaque to layout - it only ever tests slots for
    * equality. Nodes sharing a slot occupy one logical position and are fanned
    * apart, which is how several versions of the same node stay aligned.
    */
@@ -36,7 +36,7 @@ export interface StructureEdge {
    * so a plugin should name slots in the order it wants them drawn.
    */
   readonly slot: string;
-  /** True when the child predates the parent — a pointer into reused memory. */
+  /** True when the child predates the parent - a pointer into reused memory. */
   readonly reused: boolean;
 }
 

@@ -47,7 +47,7 @@ export function Inspector({ state, selected }: {
       <Row k="Depth" v={String(node.depth)} />
       <Row k="Slot" v={node.slot} />
       <Row k="Origin" v={String(node.origin)} />
-      <Row k="Children" v={children.length === 0 ? '—' : children.map(([s, c]) => `${s}:#${c}`).join(' ')} />
+      <Row k="Children" v={children.length === 0 ? '-' : children.map(([s, c]) => `${s}:#${c}`).join(' ')} />
       <Row k="Parents" v={parents.length === 0 ? 'root' : parents.map((p) => `#${p}`).join(' ')} />
       <Row k="Ref count" v={String(parents.length)} />
       <Row k="Reused" v={String(state.reuseCount.get(selected) ?? 0)} />
@@ -61,7 +61,7 @@ export function Stats({ state, stats }: {
   readonly stats: Statistics;
 }): JSX.Element {
   // Deliberately no "memory saved" figure. Computing it needs to know what a
-  // full copy would have cost, which only the plugin knows — a generic panel
+  // full copy would have cost, which only the plugin knows - a generic panel
   // guessing at it would print a confident wrong number.
   return (
     <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 text-xs">

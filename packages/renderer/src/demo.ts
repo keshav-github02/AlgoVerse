@@ -4,8 +4,8 @@
  *     node packages/renderer/src/demo.ts
  *     start demo\index.html
  *
- * Nothing here is part of the product. It drives the real engine — parse,
- * execute, file events, replay, lay out, render — and writes the result to
+ * Nothing here is part of the product. It drives the real engine - parse,
+ * execute, file events, replay, lay out, render - and writes the result to
  * disk so the pipeline can be inspected before there is an application shell.
  *
  * Every frame is drawn from `sceneToStructure(playback.scene())`, never from
@@ -140,7 +140,7 @@ const page = `<!doctype html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AlgoVerse — replayed engine output</title>
+<title>AlgoVerse - replayed engine output</title>
 <style>
 :root {
   --bg:#f1f4f7; --panel:#fff; --line:#d3dbe3; --text:#171f27; --dim:#596775; --faint:#8695a3;
@@ -182,7 +182,7 @@ ${SCENE_STYLES}
 </head>
 <body>
 <main>
-  <h1>AlgoVerse — replayed engine output</h1>
+  <h1>AlgoVerse - replayed engine output</h1>
   <p class="sub">Every frame below is reconstructed from the event log, not read out of the plugin.
   Scrub and you are folding events through the reducer. Colour is provenance &mdash; which
   generation allocated a node. Dashed pointers reach into reused memory. Layout is computed once

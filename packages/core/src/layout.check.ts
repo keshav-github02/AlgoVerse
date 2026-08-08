@@ -3,7 +3,7 @@
  *
  *     node packages/core/src/layout.check.ts
  *
- * The graph builders are fixtures — core has no plugin dependency, so the
+ * The graph builders are fixtures - core has no plugin dependency, so the
  * shapes a plugin would emit are constructed here by hand.
  */
 
