@@ -23,7 +23,7 @@ export function sceneToStructure(scene: SceneState, layoutHint: LayoutHint): Str
       label: n.label,
       value: n.value,
       role: n.role,
-      depth: n.depth,
+      ...(n.depth === undefined ? {} : { depth: n.depth }),
       slot: n.slot,
       origin: n.origin,
     });

@@ -14,6 +14,7 @@
     "@algoverse/core": "workspace:*",
     "@algoverse/plugin-persistent-segment-tree": "workspace:*",
     "@algoverse/plugin-stack": "workspace:*",
-    "@algoverse/plugin-persistent-bit": "workspace:*"
+    "@algoverse/plugin-persistent-bit": "workspace:*",
+    "@algoverse/plugin-persistent-treap": "workspace:*"
   }
 }

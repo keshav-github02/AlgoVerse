@@ -4,7 +4,7 @@
  * Cell i stores the sum of `a[i - lowbit(i) + 1 .. i]`. Reading a prefix walks
  * down by clearing the low bit; writing walks up by adding it. The upward walk
  * is the parent chain, so an update copies one path and reuses everything else
- * — the same persistence trick as the segment tree, over a different shape.
+ * - the same persistence trick as the segment tree, over a different shape.
  *
  * Two things here that the segment tree never needed: the forest has several
  * roots unless n is a power of two, and cells must be drawn in index order
@@ -105,7 +105,7 @@ class Instance implements PluginInstance {
 
   #available(): string {
     return this.#versions.length === 0
-      ? 'nothing is built yet — start with build'
+      ? 'nothing is built yet - start with build'
       : `versions available: ${this.#versions.map((_, i) => `v${i}`).join(', ')}`;
   }
 

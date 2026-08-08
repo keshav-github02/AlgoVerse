@@ -39,7 +39,7 @@ export const explainBit: Explainer = (event: SimEvent, ctx: ExplainContext): str
       if (command === 'build') {
         return width === 1
           ? `Cell ${i} covers only itself, so it holds a[${i}] = ${event.value}.`
-          : `Cell ${i} covers ${covers(i)} — ${width} values — because its lowest set bit is ` +
+          : `Cell ${i} covers ${covers(i)} - ${width} values - because its lowest set bit is ` +
             `${width}. It sums to ${event.value}.`;
       }
       const index = argOf(ctx, 'index');
@@ -48,7 +48,7 @@ export const explainBit: Explainer = (event: SimEvent, ctx: ExplainContext): str
       return i === index
         ? `Cell ${index} is copied first: it is where the write lands. ${delta ?? 0} is added ` +
           `to give ${event.value}.`
-        : `Cell ${i} also covers index ${index} — its span ${covers(i)} contains it — so it is ` +
+        : `Cell ${i} also covers index ${index} - its span ${covers(i)} contains it - so it is ` +
           `copied too, giving ${event.value}. The walk is i += lowbit(i).`;
     }
 
@@ -80,7 +80,7 @@ export const explainBit: Explainer = (event: SimEvent, ctx: ExplainContext): str
       if (event.version === 0) {
         return n === 1
           ? `Version 0 is complete. The forest has a single root because the size is a power of two.`
-          : `Version 0 is complete, with ${n} roots — a Fenwick forest only has one when its ` +
+          : `Version 0 is complete, with ${n} roots - a Fenwick forest only has one when its ` +
             `size is a power of two.`;
       }
       const fresh = [...ctx.after.nodes.values()].filter((x) => x.origin === event.version).length;
@@ -94,7 +94,7 @@ export const explainBit: Explainer = (event: SimEvent, ctx: ExplainContext): str
       const parent = ctx.after.nodes.get(event.from);
       if (child === undefined || parent === undefined) return null;
       return child.origin < parent.origin
-        ? `The copied cell keeps v${child.origin}'s subtree — one pointer instead of a copy.`
+        ? `The copied cell keeps v${child.origin}'s subtree - one pointer instead of a copy.`
         : `The copied cell links to the child copied alongside it.`;
     }
 

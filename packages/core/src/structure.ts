@@ -14,7 +14,12 @@ export interface StructureNode {
   readonly label: string;
   readonly value: number;
   readonly role: string;
-  readonly depth: number;
+  /**
+   * Vertical level. Optional: a shared subtree can sit at different depths in
+   * different versions, so no single number is true. Layout derives it from the
+   * graph when it is absent.
+   */
+  readonly depth?: number;
   /**
    * Layout grouping key, opaque to layout - it only ever tests slots for
    * equality. Nodes sharing a slot occupy one logical position and are fanned
@@ -29,7 +34,7 @@ export interface StructureNode {
   /**
    * Optional reading order along the layout axis. Layout otherwise derives x
    * from a depth-first walk, which assumes the structure's natural order is its
-   * traversal order — true for a tree, false for anything indexed.
+   * traversal order - true for a tree, false for anything indexed.
    */
   readonly order?: number;
 }

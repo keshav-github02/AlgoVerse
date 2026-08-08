@@ -6,7 +6,7 @@
  */
 
 import {
-  Timeline, createRng, parseCommand, sceneToStructure,
+  Timeline, createRng, parseCommand, reachableFrom, sceneToStructure,
   type CommandSpec, type NodeId, type SimEvent,
 } from '@algoverse/core';
 import type { AlgorithmPlugin, PluginInstance, StructureGraph } from './contract.ts';
@@ -158,6 +158,15 @@ export function runConformance(
   const after = resettable.getStructure();
   add('reset clears the structure', after.nodes.length === 0 && after.roots.length === 0,
     `${after.nodes.length} nodes remain`);
+
+  // 8b. Nothing allocated should be stranded
+  const finalGraph = inst.getStructure();
+  const live = reachableFrom(finalGraph, finalGraph.roots);
+  const stranded = finalGraph.nodes.filter((n) => !live.has(n.id)).length;
+  add('every allocated node is reachable', stranded === 0,
+    stranded === 0
+      ? `${finalGraph.nodes.length} nodes, all live`
+      : `${stranded} of ${finalGraph.nodes.length} unreachable - allocated then discarded`);
 
   // 9. Bad semantics are returned, never thrown
   const versioned = plugin.commands.filter((c) => c.params.some((p) => p.kind === 'version'));

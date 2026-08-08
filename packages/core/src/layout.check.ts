@@ -182,7 +182,7 @@ check('parents sit centred over their children', [...kids.entries()].every(([par
   return Math.abs(p.x - xs.reduce((a, b) => a + b, 0) / xs.length) < 1e-6;
 }));
 check('deeper nodes sit lower', single.nodes.every((n) =>
-  n.y === DEFAULT_LAYOUT.margin + n.node.depth * (DEFAULT_LAYOUT.nodeHeight + DEFAULT_LAYOUT.levelGap)
+  n.y === DEFAULT_LAYOUT.margin + (n.node.depth ?? 0) * (DEFAULT_LAYOUT.nodeHeight + DEFAULT_LAYOUT.levelGap)
     + DEFAULT_LAYOUT.nodeHeight / 2));
 check('every node fits inside the reported bounds', three.nodes.every((n) =>
   n.x - n.width / 2 >= 0 && n.x + n.width / 2 <= three.width

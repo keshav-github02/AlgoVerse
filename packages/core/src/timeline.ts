@@ -22,7 +22,8 @@ export type SimEvent =
       readonly value: number;
       readonly label: string;
       readonly role: string;
-      readonly depth: number;
+      /** Omit when the node sits at different depths in different versions. */
+      readonly depth?: number;
       readonly slot: string;
       readonly origin: number;
     }
@@ -45,7 +46,7 @@ export interface SceneNode {
   readonly value: number;
   readonly label: string;
   readonly role: string;
-  readonly depth: number;
+  readonly depth?: number;
   readonly slot: string;
   readonly origin: number;
   /** Keyed by slot name, so a node may have two children or twenty. */
@@ -78,7 +79,8 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
       const nodes = new Map(s.nodes);
       nodes.set(e.node, {
         value: e.value, label: e.label, role: e.role,
-        depth: e.depth, slot: e.slot, origin: e.origin,
+        slot: e.slot, origin: e.origin,
+        ...(e.depth === undefined ? {} : { depth: e.depth }),
         children: new Map(),
       });
       return { ...s, nodes };

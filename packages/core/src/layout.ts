@@ -87,7 +87,46 @@ interface Slot {
   x: number;
 }
 
-function buildSlots(graph: StructureGraph, o: LayoutOptions): Map<string, Slot> {
+/**
+ * Levels from the graph itself, for plugins that cannot name one.
+ *
+ * A shared subtree sits at different depths in different versions, so a node
+ * has no single true depth; breadth-first from the roots gives the shallowest,
+ * which is where it first appears and where it reads most naturally.
+ */
+function deriveDepths(graph: StructureGraph): ReadonlyMap<NodeId, number> {
+  const adj = new Map<NodeId, NodeId[]>();
+  for (const e of graph.edges) {
+    const list = adj.get(e.from) ?? [];
+    list.push(e.to);
+    adj.set(e.from, list);
+  }
+  const depth = new Map<NodeId, number>();
+  let frontier = [...graph.roots];
+  for (const id of frontier) depth.set(id, 0);
+  let level = 0;
+  while (frontier.length > 0) {
+    level += 1;
+    const next: NodeId[] = [];
+    for (const id of frontier) {
+      for (const child of adj.get(id) ?? []) {
+        if (depth.has(child)) continue;
+        depth.set(child, level);
+        next.push(child);
+      }
+    }
+    frontier = next;
+  }
+  // Anything unreachable still needs a row.
+  for (const n of graph.nodes) if (!depth.has(n.id)) depth.set(n.id, 0);
+  return depth;
+}
+
+function buildSlots(
+  graph: StructureGraph,
+  o: LayoutOptions,
+  depthOf: ReadonlyMap<NodeId, number>,
+): Map<string, Slot> {
   const grouped = new Map<string, StructureNode[]>();
   for (const n of graph.nodes) {
     const list = grouped.get(n.slot) ?? [];
@@ -102,7 +141,7 @@ function buildSlots(graph: StructureGraph, o: LayoutOptions): Map<string, Slot> 
     slots.set(key, {
       key,
       members,
-      depth: Math.min(...members.map((m) => m.depth)),
+      depth: Math.min(...members.map((m) => m.depth ?? depthOf.get(m.id) ?? 0)),
       halfWidth: span / 2,
       x: 0,
     });
@@ -142,7 +181,7 @@ function orderLeafSlots(
 }
 
 function layered(graph: StructureGraph, o: LayoutOptions): PositionedScene {
-  const slots = buildSlots(graph, o);
+  const slots = buildSlots(graph, o, deriveDepths(graph));
   const slotOf = new Map<NodeId, string>();
   for (const n of graph.nodes) slotOf.set(n.id, n.slot);
 
@@ -243,8 +282,10 @@ function layered(graph: StructureGraph, o: LayoutOptions): PositionedScene {
 }
 
 function stacked(graph: StructureGraph, o: LayoutOptions): PositionedScene {
-  const ordered = [...graph.nodes].sort((a, b) => (a.depth !== b.depth ? a.depth - b.depth : a.id - b.id));
-  const maxDepth = ordered.length === 0 ? 0 : Math.max(...ordered.map((n) => n.depth));
+  const depthOf = deriveDepths(graph);
+  const level = (n: StructureNode): number => n.depth ?? depthOf.get(n.id) ?? 0;
+  const ordered = [...graph.nodes].sort((a, b) => (level(a) !== level(b) ? level(a) - level(b) : a.id - b.id));
+  const maxDepth = ordered.length === 0 ? 0 : Math.max(...ordered.map(level));
   const step = o.nodeHeight + o.levelGap / 3;
   const placed = new Map<NodeId, PositionedNode>();
   for (const n of ordered) {
@@ -252,7 +293,7 @@ function stacked(graph: StructureGraph, o: LayoutOptions): PositionedScene {
       node: n,
       x: o.margin + o.nodeWidth / 2,
       // Depth 0 sits at the bottom, so a stack grows upward the way it reads.
-      y: o.margin + (maxDepth - n.depth) * step + o.nodeHeight / 2,
+      y: o.margin + (maxDepth - level(n)) * step + o.nodeHeight / 2,
       width: o.nodeWidth,
       height: o.nodeHeight,
     });

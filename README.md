@@ -54,7 +54,7 @@ Four packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, stack |
+| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, stack |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
@@ -90,7 +90,7 @@ algoverse/
 | Phase | Scope |
 | --- | --- |
 | 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
-| 2 | Persistent BIT **(done)**, trie, BST, treap |
+| 2 | Persistent BIT **(done)**, treap **(done)**, trie, BST |
 | 3 | AVL, red-black, B-tree, B+ tree, splay |
 | 4 | Graphs - DFS, BFS, Dijkstra, Prim, Kruskal, SCC, bridges, articulation points |
 | 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
@@ -116,7 +116,7 @@ Deliberately not yet adopted, to keep the dependency surface honest:
 | D3 | Layout is hand-written; `d3-hierarchy` becomes worthwhile at force-directed graphs |
 
 Phase 1 runs entirely in the browser. A session autosaves to local storage, and **share** puts the
-whole thing in a link — the commands, not the structure, so replaying restores the full timeline. A
+whole thing in a link - the commands, not the structure, so replaying restores the full timeline. A
 backend arrives only when accounts or collaboration require one.
 
 ## Contributing

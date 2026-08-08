@@ -38,9 +38,9 @@ check('an empty script round-trips', (() => {
   return r.ok && r.file.commands.length === 0 && r.file.digest === null;
 })());
 check('non-ASCII survives', (() => {
-  const odd: SimulationFile = { ...sample, commands: ['build [1 2 3] — π'] };
+  const odd: SimulationFile = { ...sample, commands: ['build [1 2 3] - π'] };
   const r = decodeSimulation(encodeSimulation(odd));
-  return r.ok && r.file.commands[0] === 'build [1 2 3] — π';
+  return r.ok && r.file.commands[0] === 'build [1 2 3] - π';
 })());
 
 /* ── Size ──────────────────────────────────────────────────────────── */
@@ -53,7 +53,7 @@ const long: SimulationFile = {
 };
 const longLink = encodeSimulation(long);
 check('a 51-command session fits comfortably in a URL', longLink.length < 4000,
-  `${longLink.length} characters — browsers handle about 8000`);
+  `${longLink.length} characters - browsers handle about 8000`);
 
 /* ── Rejection ─────────────────────────────────────────────────────── */
 

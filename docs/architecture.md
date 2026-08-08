@@ -201,7 +201,7 @@ reported a pass. It now reports **skipped**, which is the truth.
 
 ### What the third plugin found
 
-The persistent BIT is a Fenwick tree with path copying — persistent like the segment tree, but a
+The persistent BIT is a Fenwick tree with path copying - persistent like the segment tree, but a
 different shape. It exposed two more assumptions, both invisible while every plugin was a tree:
 
 | Assumption | Why it broke | Fix |
@@ -213,8 +213,27 @@ The first is the more important: "a version is a set of entry points, not one no
 model, and it will matter again for any forest-shaped structure.
 
 Both are cheap changes that were expensive to foresee. The README's claim that adding an algorithm
-needs no engine changes held for the stack and did not hold here — which is the argument for adding
+needs no engine changes held for the stack and did not hold here - which is the argument for adding
 plugins early rather than after the contract has hardened.
+
+### What the fourth plugin found
+
+The treap is the first plugin to draw from `ctx.rng`. Until it existed, every plugin took `_ctx`
+and ignored it — so the save format's central claim, that replay is sound *because* randomness comes
+from a seed carried in the file, had never been exercised. It now is: the same seed rebuilds the
+same tree, a different seed builds a different one, and every version holds the right keys under
+either.
+
+It also forced two changes:
+
+| Assumption | Why it broke | Fix |
+| --- | --- | --- |
+| Every node has a depth | A shared subtree sits at different depths in different versions, so no single number is true | `depth` is optional; layout derives it breadth-first from the roots when absent |
+| A plugin only allocates what it keeps | Split-then-merge insert copied each path twice and orphaned the first copy — 64% of the canvas was unreachable | Insert descends and splits once; build constructs directly instead of inserting repeatedly. The conformance kit now checks it |
+
+That last one is the useful one. **"Every allocated node is reachable"** is a generic property, and
+the kit now enforces it for every plugin — it catches wasted allocation that nothing else would
+notice, because the result still looks correct and merely renders a canvas full of debris.
 
 Two residual compromises, both recorded rather than fixed:
 
@@ -366,7 +385,7 @@ Three requirements, all cheap now:
   path from the first release. Without it, the first refactor invalidates every shared link ever
   created.
 
-These are not hygiene — they are what makes the save format below possible at all.
+These are not hygiene - they are what makes the save format below possible at all.
 
 ---
 
@@ -374,7 +393,7 @@ These are not hygiene — they are what makes the save format below possible at 
 
 **A saved simulation is the list of commands, not the structure they produced.** Replaying rebuilds
 the state, the event log, the marks and the timeline, so a loaded simulation scrubs exactly like a
-fresh one. Saving the structure would restore the final picture and throw away the history — and
+fresh one. Saving the structure would restore the final picture and throw away the history - and
 would be a second source of truth, free to drift from the log. It is the same argument as
 re-derivation over inverse events, one level up.
 
@@ -395,7 +414,7 @@ would just reproduce the error on load.
 
 `PluginInstance.serialize()` is not the save format, but it is not dead either: it produces the
 **digest**. After replaying, the loader compares it against the saved one, which catches the silent
-failure a command-replay format is otherwise prone to — a plugin whose behaviour changed since the
+failure a command-replay format is otherwise prone to - a plugin whose behaviour changed since the
 file was written, replaying the same script into a different structure.
 
 The digest is a **hash**, not the state. Embedding the serialised structure made a four-command
