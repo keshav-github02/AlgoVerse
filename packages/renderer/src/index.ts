@@ -1,6 +1,7 @@
 export {
   sceneElements,
   type Attrs,
+  type Emphasis,
   type AttrValue,
   type RenderOptions,
   type SceneElement,

@@ -5,6 +5,8 @@ import { useUi } from './store.ts';
 import { Scene } from './components/Scene.tsx';
 import { Console } from './components/Console.tsx';
 import { Inspector, Stats } from './components/Inspector.tsx';
+import { DiffPanel } from './components/Diff.tsx';
+import { computeDiff } from './diff.ts';
 
 const BTN = 'rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 font-mono text-[11px] ' +
   'text-[var(--text)] hover:border-[var(--faint)] focus-visible:outline focus-visible:outline-2 ' +
@@ -26,7 +28,10 @@ function Panel({ title, children, className = '' }: {
 }
 
 export function App(): JSX.Element {
-  const { pluginId, setPlugin, selected, select, showLabels, toggleLabels } = useUi();
+  const {
+    pluginId, setPlugin, selected, select, showLabels, toggleLabels,
+    mode, setMode, diffA, diffB, setDiff,
+  } = useUi();
   const [epoch, setEpoch] = useState(0);
 
   const plugin = PLUGINS.find((p) => p.meta.id === pluginId) ?? (PLUGINS[0] as typeof PLUGINS[number]);
@@ -66,6 +71,12 @@ export function App(): JSX.Element {
 
   const view = session.view();
   const onSelect = useCallback((id: NodeId | null) => select(id), [select]);
+
+  const versions = view.state.versions;
+  const canDiff = versions.length >= 2;
+  const diff = canDiff && mode === 'diff'
+    ? computeDiff(view.state, session.layoutHint, diffA, Math.min(diffB, versions.length - 1))
+    : null;
 
   return (
     <div className="grid h-screen grid-rows-[auto_minmax(0,1fr)] gap-2 bg-[var(--bg)] p-2 text-[var(--text)]">
@@ -140,16 +151,29 @@ export function App(): JSX.Element {
             <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">Canvas</span>
               <span className="font-mono text-[10.5px] text-[var(--dim)]">
-                {describeEvent(session.currentEvent())}
+                {mode === 'diff' && diff !== null
+                  ? `v${diffA} vs v${Math.min(diffB, versions.length - 1)} — ${diff.diff.shared.length} shared`
+                  : describeEvent(session.currentEvent())}
               </span>
-              <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
-                <input type="checkbox" checked={showLabels} onChange={toggleLabels} />labels
-              </label>
+              <div className="flex items-center gap-3">
+                {canDiff && (
+                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
+                    <input
+                      type="checkbox" checked={mode === 'diff'}
+                      onChange={() => setMode(mode === 'diff' ? 'live' : 'diff')}
+                    />compare
+                  </label>
+                )}
+                <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
+                  <input type="checkbox" checked={showLabels} onChange={toggleLabels} />labels
+                </label>
+              </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-3">
               <Scene
-                scene={view.scene} visited={view.visited} selected={selected}
+                scene={view.scene} visited={diff === null ? view.visited : []} selected={selected}
                 showLabels={showLabels} onSelect={onSelect}
+                {...(diff === null ? {} : { emphasis: diff.emphasis })}
               />
             </div>
           </section>
@@ -165,8 +189,15 @@ export function App(): JSX.Element {
         </div>
 
         <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-2">
-          <Panel title="Inspector">
-            <Inspector state={view.state} selected={selected} />
+          <Panel title={mode === 'diff' ? 'Compare versions' : 'Inspector'}>
+            {mode === 'diff' && canDiff ? (
+              <DiffPanel
+                versions={versions} a={diffA} b={Math.min(diffB, versions.length - 1)}
+                onChange={setDiff} result={diff}
+              />
+            ) : (
+              <Inspector state={view.state} selected={selected} />
+            )}
           </Panel>
           <Panel title="Statistics">
             <Stats state={view.state} stats={session.stats} />

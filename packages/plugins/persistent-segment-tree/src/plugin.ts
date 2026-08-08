@@ -8,7 +8,7 @@
  */
 
 import {
-  getInt, getIntList, getVersion,
+  diffRoots, getInt, getIntList, getVersion,
   type CommandSpec, type NodeId, type OperationError, type ParsedCommand, type SimEvent,
 } from '@algoverse/core';
 import {
@@ -261,30 +261,17 @@ class Instance implements PluginInstance {
     const rb = this.#root(b);
     if (!('id' in rb)) return failed(rb);
 
-    const reach = (start: Node): Set<NodeId> => {
-      const seen = new Set<NodeId>();
-      const stack: NodeId[] = [start.id];
-      while (stack.length > 0) {
-        const id = stack.pop() as NodeId;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        const n = this.#nodes.get(id) as Node;
-        if (n.left !== null) stack.push(n.left);
-        if (n.right !== null) stack.push(n.right);
-      }
-      return seen;
-    };
-
-    const sa = reach(ra);
-    const sb = reach(rb);
-    const shared = [...sa].filter((id) => sb.has(id));
+    // Reachability is structural, so it lives in core rather than being
+    // re-implemented per plugin — and the diff view uses the same function.
+    const diff = diffRoots(this.getStructure(), ra.id, rb.id);
+    const shared = diff.shared;
     return {
       ok: true,
       value: {
         shared: shared.length,
-        onlyInA: sa.size - shared.length,
-        onlyInB: sb.size - shared.length,
-        sharedPercent: Math.round((shared.length / Math.max(1, sb.size)) * 100),
+        onlyInA: diff.onlyA.length,
+        onlyInB: diff.onlyB.length,
+        sharedPercent: Math.round(diff.sharedRatio * 100),
       },
       events: shared.map((id): SimEvent => ({ kind: 'NodeVisited', node: id })),
       statsDelta: { queries: 1, nodeVisits: shared.length },

@@ -13,6 +13,13 @@ export {
 
 export { sceneToStructure } from './scene.ts';
 
+export {
+  diffRoots,
+  reachableFrom,
+  type Membership,
+  type RootDiff,
+} from './reach.ts';
+
 export { BASE_RATE, Playback } from './playback.ts';
 
 export { createRng, type Rng } from './rng.ts';

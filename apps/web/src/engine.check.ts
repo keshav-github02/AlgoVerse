@@ -9,6 +9,7 @@
 
 import type { NodeId } from '@algoverse/core';
 import { PLUGINS, Session, describeEvent } from './engine.ts';
+import { computeDiff } from './diff.ts';
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -105,6 +106,45 @@ check('the inspector can read a node from the replayed state', (() => {
   const state = s.view().state;
   const first = [...state.nodes.keys()][0];
   return first !== undefined && state.nodes.get(first)?.slot !== undefined;
+})());
+
+/* ── Version comparison ────────────────────────────────────────────── */
+
+console.log('\ncompare');
+
+s.playback.last();
+const versions = s.view().state.versions;
+check('the replayed scene exposes three versions', versions.length === 3, `${versions.length}`);
+
+const d01 = computeDiff(s.view().state, s.layoutHint, 0, 1);
+check('v0 vs v1 shares everything off the update path',
+  d01?.diff.shared.length === 11 && d01.diff.onlyA.length === 4 && d01.diff.onlyB.length === 4,
+  d01 === null ? '' : `${d01.diff.shared.length} shared, ${d01.diff.onlyA.length} only v0, ${d01.diff.onlyB.length} only v1`);
+check('an update reuses most of the previous version',
+  Math.round((d01?.diff.sharedRatio ?? 0) * 100) === 73,
+  `${Math.round((d01?.diff.sharedRatio ?? 0) * 100)}% of v1 reused`);
+check('exactly log2(8)+1 nodes are new per update', d01?.diff.onlyB.length === 4);
+check('shared nodes read as primary, differing as secondary', (() => {
+  if (d01 === null) return false;
+  const shared = d01.diff.shared[0];
+  const only = d01.diff.onlyB[0];
+  return shared !== undefined && only !== undefined
+    && d01.emphasis.get(shared) === 'primary' && d01.emphasis.get(only) === 'secondary';
+})());
+check('v0 vs v2 shares less than v0 vs v1', (() => {
+  const d02 = computeDiff(s.view().state, s.layoutHint, 0, 2);
+  return d02 !== null && d01 !== null && d02.diff.sharedRatio < d01.diff.sharedRatio;
+})());
+check('the console command agrees with the view', (() => {
+  s.run('compare v0 v1');
+  const text = (s.history[s.history.length - 1] as { text: string }).text;
+  return text.includes('"shared":11') && text.includes('"sharedPercent":73');
+})(), (s.history[s.history.length - 1] as { text: string }).text);
+
+check('a structure with no versions offers no comparison', (() => {
+  const noHistory = new Session(stackPlugin);
+  noHistory.run('push 1');
+  return noHistory.view().state.versions.length === 0;
 })());
 
 /* ── Event descriptions ────────────────────────────────────────────── */

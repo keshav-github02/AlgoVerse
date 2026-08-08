@@ -80,6 +80,22 @@ carry is a place where replay silently falls back on present-day state.
 The conformance kit compares the derived graph against `getStructure()` field by field — a `slot`
 that disagrees puts a node in the wrong place, an `origin` that disagrees gives it the wrong colour.
 
+### Comparing versions
+
+`diffRoots` walks edges from two roots and classifies every node as shared, only-in-A, only-in-B,
+or neither. It is purely structural — nothing in it knows what a version is, which is why the same
+function answers "what does this version see" for a persistent tree and "what is still linked" for
+anything else. The segment tree's `compare` command calls it rather than carrying its own traversal.
+
+The renderer expresses the result through a generic three-level `emphasis` map: **primary**,
+**secondary**, **muted**. The caller decides what the levels mean; the renderer only knows one reads
+louder than the next. Shared nodes get primary, because reuse is the point of the comparison — the
+handful of differing nodes are the easy part to see.
+
+Emphasis is carried by stroke weight and dash pattern as well as opacity, so the distinction
+survives for anyone who cannot separate the shades. An edge is drawn only as loud as its quieter
+end, which keeps pointers into muted regions from standing out.
+
 ### Layout is computed once, not per frame
 
 Playback lays out the **union of every node that ever exists**, then draws each frame as a subset of
@@ -425,8 +441,10 @@ unchanged after both updates.
 
 - ~~**Version window.**~~ **Resolved — no cap is needed.** See [Layout](#layout) below.
 - **Keyframe interval.** `K = 50` is a guess. Measure once real logs exist.
-- **View modes.** `single | diff | union` is the current model. Whether `diff` is a distinct
-  layout or a filter over `union` is unresolved.
+- ~~**View modes.**~~ **Resolved.** `diff` is a filter over the union, not a separate layout: it
+  reuses the same coordinates and only changes emphasis, so switching between comparing and
+  watching never moves a node. Comparison appears whenever the replayed scene reports two or more
+  versions — driven by the data, so a structure without history simply never offers it.
 - **License.** Not chosen. Required before any public release.
 
 ---

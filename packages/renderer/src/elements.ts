@@ -19,15 +19,31 @@ export type SceneElement =
   | { readonly tag: 'text'; readonly attrs: Attrs; readonly text: string }
   | { readonly tag: 'g'; readonly attrs: Attrs; readonly children: readonly SceneElement[] };
 
+/**
+ * Relative weight of a node in the current view. The caller decides what the
+ * levels mean — the renderer only knows one reads louder than the next.
+ */
+export type Emphasis = 'primary' | 'secondary' | 'muted';
+
 export interface RenderOptions {
   /** Nodes drawn with an emphasis ring and a corner tick. */
   readonly highlight?: readonly NodeId[];
   /** Nodes pushed into the background. */
   readonly dim?: readonly NodeId[];
+  /** Per-node weighting. Absent nodes are drawn normally. */
+  readonly emphasis?: ReadonlyMap<NodeId, Emphasis>;
   /** Show the small label under each value. */
   readonly showLabels?: boolean;
   /** Accessible description of the whole picture. */
   readonly title?: string;
+}
+
+const WEIGHT: Record<Emphasis, number> = { primary: 2, secondary: 1, muted: 0 };
+
+/** An edge is only as loud as its quieter end. */
+function edgeEmphasis(a: Emphasis | undefined, b: Emphasis | undefined): Emphasis | undefined {
+  if (a === undefined || b === undefined) return undefined;
+  return WEIGHT[a] <= WEIGHT[b] ? a : b;
 }
 
 const PALETTE_SIZE = 6;
@@ -47,16 +63,24 @@ export function sceneElements(
   const originOf = new Map<NodeId, number>();
   for (const p of scene.nodes) originOf.set(p.node.id, p.node.origin);
 
+  const emphasis = options.emphasis;
   const edges: SceneElement[] = scene.edges.map((e) => {
     const dy = e.y2 - e.y1;
     const d = Math.abs(dy) < 1
       ? `M${n2(e.x1)},${n2(e.y1)} L${n2(e.x2)},${n2(e.y2)}`
       : `M${n2(e.x1)},${n2(e.y1)} C${n2(e.x1)},${n2(e.y1 + dy * 0.45)} ` +
         `${n2(e.x2)},${n2(e.y2 - dy * 0.45)} ${n2(e.x2)},${n2(e.y2)}`;
+    const em = emphasis === undefined
+      ? undefined
+      : edgeEmphasis(emphasis.get(e.from), emphasis.get(e.to));
     return {
       tag: 'path',
       attrs: {
-        className: e.reused ? 'av-edge av-reused' : 'av-edge',
+        className: [
+          'av-edge',
+          e.reused ? 'av-reused' : '',
+          em === undefined ? '' : `av-em-${em}`,
+        ].filter((c) => c !== '').join(' '),
         // Colour by the child's origin: a pointer into older memory reads older.
         stroke: hue(originOf.get(e.to) ?? 0),
         d,
@@ -72,6 +96,8 @@ export function sceneElements(
     const classes = ['av-node'];
     if (highlight.has(node.id)) classes.push('av-highlight');
     if (dim.has(node.id)) classes.push('av-dim');
+    const em = emphasis?.get(node.id);
+    if (em !== undefined) classes.push(`av-em-${em}`);
 
     const children: SceneElement[] = [
       {

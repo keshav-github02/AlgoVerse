@@ -7,13 +7,14 @@
 
 import { Fragment, type JSX, type MouseEvent, type SVGProps } from 'react';
 import type { NodeId, PositionedScene } from '@algoverse/core';
-import { sceneElements, type SceneElement } from '@algoverse/renderer';
+import { sceneElements, type Emphasis, type SceneElement } from '@algoverse/renderer';
 
 interface Props {
   readonly scene: PositionedScene;
   readonly visited: readonly NodeId[];
   readonly selected: NodeId | null;
   readonly showLabels: boolean;
+  readonly emphasis?: ReadonlyMap<NodeId, Emphasis>;
   readonly onSelect: (id: NodeId | null) => void;
 }
 
@@ -60,7 +61,7 @@ function toReact(
   return <path {...asProps<SVGPathElement>(el.attrs)} key={key} />;
 }
 
-export function Scene({ scene, visited, selected, showLabels, onSelect }: Props): JSX.Element {
+export function Scene({ scene, visited, selected, showLabels, emphasis, onSelect }: Props): JSX.Element {
   if (scene.nodes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs italic text-[var(--faint)]">
@@ -76,7 +77,11 @@ export function Scene({ scene, visited, selected, showLabels, onSelect }: Props)
       className="block h-auto w-full min-w-[520px]"
       onClick={() => onSelect(null)}
     >
-      {sceneElements(scene, { highlight: visited, showLabels }).map((el, i) => (
+      {sceneElements(scene, {
+        highlight: visited,
+        showLabels,
+        ...(emphasis === undefined ? {} : { emphasis }),
+      }).map((el, i) => (
         <Fragment key={i}>{toReact(el, String(i), selected, onSelect)}</Fragment>
       ))}
     </svg>

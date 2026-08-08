@@ -65,3 +65,14 @@ body { margin: 0; background: var(--bg); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Legend swatches mirror the canvas treatment so the key is literal. */
+.av-legend-primary { stroke-width: 2.75; }
+.av-legend-secondary { stroke-dasharray: 3 2.5; opacity: .62; }
+.av-node.av-em-primary rect { stroke-width: 2.75; }
+.av-node.av-em-secondary { opacity: .62; }
+.av-node.av-em-secondary rect { stroke-dasharray: 3 2.5; }
+.av-node.av-em-muted { opacity: .1; }
+.av-edge.av-em-primary { opacity: 1; }
+.av-edge.av-em-secondary { opacity: .38; }
+.av-edge.av-em-muted { opacity: .06; }

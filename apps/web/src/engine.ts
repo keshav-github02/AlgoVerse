@@ -56,6 +56,10 @@ export class Session {
     this.playback.subscribe(() => this.#bump());
   }
 
+  get layoutHint(): LayoutHint {
+    return this.#hint;
+  }
+
   get history(): readonly HistoryEntry[] {
     return this.#history;
   }

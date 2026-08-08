@@ -21,6 +21,15 @@ export const SCENE_STYLES = `
 .av-node.av-dim { opacity: .12; }
 .av-node.av-selected rect { stroke-width: 3.25; }
 .av-tick { stroke: none; }
+/* Emphasis levels. Weight and dash carry the meaning as well as opacity, so
+   the distinction survives for anyone who cannot separate the shades. */
+.av-node.av-em-primary rect { stroke-width: 2.75; }
+.av-node.av-em-secondary { opacity: .62; }
+.av-node.av-em-secondary rect { stroke-dasharray: 3 2.5; }
+.av-node.av-em-muted { opacity: .1; }
+.av-edge.av-em-primary { opacity: 1; }
+.av-edge.av-em-secondary { opacity: .38; }
+.av-edge.av-em-muted { opacity: .06; }
 `.trim();
 
 export function escapeXml(s: string): string {
