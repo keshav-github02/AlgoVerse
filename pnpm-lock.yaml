@@ -47,6 +47,9 @@ importers:
       '@algoverse/plugin-persistent-treap':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-treap
+      '@algoverse/plugin-persistent-trie':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-trie
       '@algoverse/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -101,6 +104,15 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/persistent-trie:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/stack:
     dependencies:
       '@algoverse/core':
@@ -124,6 +136,9 @@ importers:
       '@algoverse/plugin-persistent-treap':
         specifier: workspace:*
         version: link:../plugins/persistent-treap
+      '@algoverse/plugin-persistent-trie':
+        specifier: workspace:*
+        version: link:../plugins/persistent-trie
       '@algoverse/plugin-stack':
         specifier: workspace:*
         version: link:../plugins/stack

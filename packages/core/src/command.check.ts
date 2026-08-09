@@ -8,7 +8,7 @@
  */
 
 import {
-  complete, getInt, getIntList, getVersion, help, parseCommand, usage,
+  complete, getInt, getIntList, getVersion, getWord, getWordList, help, parseCommand, usage,
   type CommandSpec, type OperationError,
 } from './command.ts';
 
@@ -78,6 +78,49 @@ check('whitespace and commas are tolerated',
 check('negative integers parse',
   (() => { const r = parseCommand('update v0 1 -7', SEGMENT_TREE);
     return r.ok && getInt(r.command, 'value') === -7; })());
+
+/* ── 1b. Text arguments ────────────────────────────────────────────── */
+
+console.log('\ntext arguments');
+
+const TEXT: readonly CommandSpec[] = [
+  { name: 'insert', summary: 'Add a word.', complexity: 'O(len)',
+    params: [{ name: 'version', kind: 'version' }, { name: 'word', kind: 'word' }] },
+  { name: 'load', summary: 'Add several words.', complexity: 'O(total)',
+    params: [{ name: 'words', kind: 'word-list' }] },
+];
+
+check('a word argument parses', (() => {
+  const r = parseCommand('insert v0 cat', TEXT);
+  return r.ok && getWord(r.command, 'word') === 'cat';
+})());
+check('words are lower-cased, so CAT and cat are one key', (() => {
+  const r = parseCommand('insert v0 CaT', TEXT);
+  return r.ok && getWord(r.command, 'word') === 'cat';
+})());
+check('a word list parses', (() => {
+  const r = parseCommand('load [cat car dog]', TEXT);
+  return r.ok && String(getWordList(r.command, 'words')) === 'cat,car,dog';
+})());
+check('a word list tolerates commas', (() => {
+  const r = parseCommand('load [cat, car,  dog]', TEXT);
+  return r.ok && getWordList(r.command, 'words').length === 3;
+})());
+check('digits are not words',
+  (() => { const r = parseCommand('insert v0 42', TEXT); return !r.ok && r.error.code === 'BAD_ARGUMENT'; })(),
+  (() => { const r = parseCommand('insert v0 42', TEXT); return r.ok ? '' : r.error.message; })());
+check('a word with punctuation is rejected',
+  (() => { const r = parseCommand("insert v0 ca-t", TEXT); return !r.ok; })());
+check('a number where a word list is expected is rejected',
+  (() => { const r = parseCommand('load [cat 3]', TEXT); return !r.ok && r.error.code === 'BAD_ARGUMENT'; })());
+check('an empty word list is rejected',
+  (() => { const r = parseCommand('load []', TEXT); return !r.ok; })());
+check('a word list renders as brackets in usage',
+  usage(TEXT[1] as CommandSpec) === 'load [words...]', usage(TEXT[1] as CommandSpec));
+check('a word renders as an angle bracket in usage',
+  usage(TEXT[0] as CommandSpec) === 'insert <version> <word>', usage(TEXT[0] as CommandSpec));
+check('int lists still reject words after the refactor',
+  (() => { const r = parseCommand('build [1 cat]', SEGMENT_TREE); return !r.ok; })());
 
 /* ── 2. Errors carry the right span ────────────────────────────────── */
 

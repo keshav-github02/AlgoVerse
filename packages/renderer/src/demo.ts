@@ -24,6 +24,7 @@ import { SCENE_STYLES, escapeXml, renderScene } from './svg.ts';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
 import { persistentBit } from '@algoverse/plugin-persistent-bit';
 import { persistentTreap } from '@algoverse/plugin-persistent-treap';
+import { persistentTrie } from '@algoverse/plugin-persistent-trie';
 import { stack } from '@algoverse/plugin-stack';
 
 interface Panel {
@@ -115,6 +116,7 @@ const panels: readonly Panel[] = [
     ['build [3 1 4 1 5 9 2 6]', 'update v0 3 10', 'update v1 6 7', 'query v1 2 5'], 'dag'),
   drive(persistentBit, ['build [3 1 4 1 5 9 2 6]', 'add v0 3 5', 'prefix v1 5'], 'dag'),
   drive(persistentTreap, ['build [5 2 8 1 9]', 'insert v0 6', 'erase v1 2'], 'dag'),
+  drive(persistentTrie, ['build [cat car card dog]', 'insert v0 care'], 'dag'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 
