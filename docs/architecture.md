@@ -219,7 +219,7 @@ plugins early rather than after the contract has hardened.
 ### What the fourth plugin found
 
 The treap is the first plugin to draw from `ctx.rng`. Until it existed, every plugin took `_ctx`
-and ignored it — so the save format's central claim, that replay is sound *because* randomness comes
+and ignored it - so the save format's central claim, that replay is sound *because* randomness comes
 from a seed carried in the file, had never been exercised. It now is: the same seed rebuilds the
 same tree, a different seed builds a different one, and every version holds the right keys under
 either.
@@ -229,10 +229,10 @@ It also forced two changes:
 | Assumption | Why it broke | Fix |
 | --- | --- | --- |
 | Every node has a depth | A shared subtree sits at different depths in different versions, so no single number is true | `depth` is optional; layout derives it breadth-first from the roots when absent |
-| A plugin only allocates what it keeps | Split-then-merge insert copied each path twice and orphaned the first copy — 64% of the canvas was unreachable | Insert descends and splits once; build constructs directly instead of inserting repeatedly. The conformance kit now checks it |
+| A plugin only allocates what it keeps | Split-then-merge insert copied each path twice and orphaned the first copy - 64% of the canvas was unreachable | Insert descends and splits once; build constructs directly instead of inserting repeatedly. The conformance kit now checks it |
 
 That last one is the useful one. **"Every allocated node is reachable"** is a generic property, and
-the kit now enforces it for every plugin — it catches wasted allocation that nothing else would
+the kit now enforces it for every plugin - it catches wasted allocation that nothing else would
 notice, because the result still looks correct and merely renders a canvas full of debris.
 
 ### What the fifth plugin found
@@ -396,8 +396,37 @@ Two different things share the word "complexity", and the original specification
 - **Measured** counters - nodes visited, comparisons, allocations, copies, shared nodes, tree
   height - are runtime facts derived from the event log.
 
-Keeping them separate enables the feature worth having: plotting measured cost against the
-theoretical curve. Seeing actual node visits track `log₂ n` is the point.
+Keeping them separate enables the feature worth having, which now exists: measured cost plotted
+against the theoretical curve.
+
+A plugin declares a `benchmark` — how to build itself at a given size, and which command to time —
+because the engine cannot know either. Everything after that is generic. Cost is counted in
+**events, not seconds**: a wall-clock reading of a teaching-sized structure measures the JIT, while
+the number of nodes an operation touches is what the complexity claim is actually about.
+
+The declared string is parsed into a curve and fitted by least squares **through the origin**. The
+shape is fixed; only its scale is free. Fitting an intercept as well would let a flat measurement
+pass for a logarithm at small sizes.
+
+The measurements are also classified against every growth class independently, so the tool reports
+what the numbers *look like* rather than only how well they match what was claimed. A declaration
+that disagrees with its own behaviour is then visible rather than assumed:
+
+| Structure | Command | Declared | Measured | Fit |
+| --- | --- | --- | --- | --- |
+| Segment tree | `query` | O(log n) | 11 → 31 visits | R² 0.998, ×3.83 |
+| BIT | `prefix` | O(log n) | 3 → 8 visits | **R² 1.0000, ×1.00** |
+| Treap | `find` | O(log n) expected | 2.9 → 9.6 visits | R² 0.939, ×1.08 |
+| Stack | `peek` | O(1) | flat at 1 | R² 1.0000 |
+
+The BIT's prefix walk is exactly `log₂ n`. The segment tree's constant of 3.83 is the "up to four
+nodes per level" bound for range queries, visible in the data rather than asserted. The treap's
+looser 0.939 is what *expected* looks like next to a guarantee — which is the distinction the word
+is carrying, and it is now something you can see.
+
+The chart spaces its x axis by `log₂ n`, so a logarithmic cost draws as a **straight line**. On a
+linear axis, logarithmic and linear both look like gentle curves and the reader is left to judge the
+difference by eye.
 
 ---
 

@@ -8,10 +8,11 @@
  */
 
 import {
-  decodeSimulation, describeEvent, encodeSimulation, fingerprint, type NodeId,
+  classify, decodeSimulation, describeEvent, encodeSimulation, fingerprint, type NodeId,
 } from '@algoverse/core';
 import { PLUGINS, Session } from './engine.ts';
 import { computeDiff } from './diff.ts';
+import { chartGeometry, measurePlugin } from './complexity.ts';
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -341,6 +342,81 @@ check('the other plugin round-trips too', (() => {
   const r = Session.load(st.toFile(), PLUGINS);
   return !('code' in r) && r.warning === null
     && r.session.view().scene.nodes.length === st.view().scene.nodes.length;
+})());
+
+/* ── Measured complexity ───────────────────────────────────────────── */
+
+console.log('\nmeasured complexity');
+
+for (const plugin of PLUGINS) {
+  const report = measurePlugin(plugin);
+  if (report === null) { check(`${plugin.meta.id} declares a benchmark`, false); continue; }
+  const fit = report.declaredFit;
+  check(
+    `${plugin.meta.id}: ${report.command} declares ${report.declared ?? '?'}, measures O(${report.bestFit.growth.label})`,
+    report.agrees,
+    fit === null ? '' : `R² ${fit.rSquared.toFixed(4)}, constant ${fit.constant.toFixed(2)}`,
+  );
+}
+
+check('measurement is deterministic', (() => {
+  const a = measurePlugin(PLUGINS[0] as typeof PLUGINS[number]);
+  const b = measurePlugin(PLUGINS[0] as typeof PLUGINS[number]);
+  return JSON.stringify(a?.samples) === JSON.stringify(b?.samples);
+})());
+
+check('cost grows with size where it should', (() => {
+  const tree = measurePlugin(segTree);
+  if (tree === null) return false;
+  return tree.samples.every((s, i) => i === 0 || s.cost > (tree.samples[i - 1] as { cost: number }).cost);
+})());
+
+check('a constant-time command does not grow at all', (() => {
+  const st = measurePlugin(stackPlugin);
+  if (st === null) return false;
+  return new Set(st.samples.map((s) => s.cost)).size === 1;
+})());
+
+check('the BIT prefix walk is exactly log2(n)', (() => {
+  const bit = PLUGINS.find((p) => p.meta.id === 'persistent-bit');
+  const r = bit === undefined ? null : measurePlugin(bit);
+  if (r === null) return false;
+  return r.samples.every((s) => s.cost === Math.log2(s.n));
+})(), 'the cleanest curve in the project');
+
+// Regression: an axis whose top tick sits below the peak draws points above
+// the plot area, which no colour or data check would notice.
+check('every chart fits inside its plot area', (() => {
+  const box = { width: 720, height: 340, top: 46, right: 26, bottom: 46, left: 56 };
+  for (const plugin of PLUGINS) {
+    const r = measurePlugin(plugin);
+    if (r === null) continue;
+    const g = chartGeometry(r, box);
+    const points = [...g.measured, ...g.predicted];
+    const top = g.ticks[g.ticks.length - 1] ?? 0;
+    const peak = Math.max(...r.samples.map((x) => x.cost), ...(r.declaredFit?.predicted ?? [0]));
+    if (top < peak) return false;
+    if (points.some((pt) => pt.y < box.top - 0.5 || pt.y > box.height - box.bottom + 0.5)) return false;
+    if (points.some((pt) => pt.x < box.left - 0.5 || pt.x > box.width - box.right + 0.5)) return false;
+  }
+  return true;
+})(), '4 plugins');
+
+check('the x axis is evenly spaced, which is what makes it logarithmic', (() => {
+  const r = measurePlugin(segTree);
+  if (r === null) return false;
+  const g = chartGeometry(r, { width: 720, height: 340, top: 46, right: 26, bottom: 46, left: 56 });
+  const gaps = g.measured.slice(1).map((pt, i) => pt.x - (g.measured[i] as { x: number }).x);
+  return gaps.every((d) => Math.abs(d - (gaps[0] as number)) < 1e-6);
+})());
+
+check('a wrong declaration would be caught', (() => {
+  // Fitting the segment tree's logarithmic query against a linear curve must
+  // score badly, or the check above proves nothing.
+  const tree = measurePlugin(segTree);
+  if (tree === null) return false;
+  const linear = classify(tree.samples).find((f) => f.growth.label === 'n');
+  return (linear?.rSquared ?? 1) < 0.9;
 })());
 
 /* ── The other plugin ──────────────────────────────────────────────── */

@@ -328,5 +328,13 @@ export const persistentSegmentTree: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainSegmentTree,
+  benchmark: {
+    sizes: [8, 16, 32, 64, 128, 256],
+    command: 'query',
+    setup: (n: number): readonly string[] => [`build [${Array.from({ length: n }, (_, i) => (i % 9) + 1).join(' ')}]`],
+    // [1, n-1) straddles both halves at every level, so the descent cannot
+    // stop early the way a whole-range query would.
+    probes: (n: number): readonly string[] => [`query v0 1 ${n - 1}`],
+  },
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

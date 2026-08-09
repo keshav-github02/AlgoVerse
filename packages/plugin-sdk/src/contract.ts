@@ -9,6 +9,7 @@
  * a future WebAssembly implementation a drop-in swap rather than a rewrite.
  */
 
+import type { Benchmark } from './benchmark.ts';
 import type {
   CommandSpec, LayoutHint, OperationError, ParsedCommand, Rng, SceneState, SimEvent,
   StructureEdge, StructureGraph, StructureNode,
@@ -124,6 +125,8 @@ export interface AlgorithmPlugin {
   readonly commands: readonly CommandSpec[];
   createInstance(ctx: EngineContext): PluginInstance;
   readonly explain?: Explainer;
+  /** How to build this structure at a given size, so its cost can be measured. */
+  readonly benchmark?: Benchmark;
 }
 
 /** Convenience for plugins returning a failure. */
