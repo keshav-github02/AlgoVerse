@@ -18,3 +18,10 @@ export {
 } from './contract.ts';
 
 export { runConformance, type ConformanceResult } from './conformance.ts';
+
+export {
+  runBenchmark,
+  type Benchmark,
+  type BenchmarkResult,
+  type Measurement,
+} from './benchmark.ts';

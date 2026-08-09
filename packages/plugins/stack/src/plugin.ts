@@ -186,5 +186,11 @@ export const stack: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainStack,
+  benchmark: {
+    sizes: [8, 16, 32, 64, 128, 256],
+    command: 'peek',
+    setup: (n: number): readonly string[] => Array.from({ length: n }, (_, i) => `push ${i}`),
+    probes: (): readonly string[] => ['peek'],
+  },
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

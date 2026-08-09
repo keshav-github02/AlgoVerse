@@ -23,6 +23,16 @@ export {
 export { describeEvent } from './explain.ts';
 
 export {
+  GROWTH_CLASSES,
+  classify,
+  fitGrowth,
+  parseComplexity,
+  type Fit,
+  type Growth,
+  type Sample,
+} from './complexity.ts';
+
+export {
   SIMULATION_SCHEMA,
   decodeSimulation,
   digestOf,

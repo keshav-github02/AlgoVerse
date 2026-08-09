@@ -377,5 +377,13 @@ export const persistentBit: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainBit,
+  benchmark: {
+    sizes: [8, 16, 32, 64, 128, 256],
+    command: 'prefix',
+    setup: (n: number): readonly string[] => [`build [${Array.from({ length: n }, (_, i) => (i % 9) + 1).join(' ')}]`],
+    // n is a power of two, so n-1 is all ones: the worst case, and exactly
+    // log2(n) cells. Any other k would sample popcount, which is not monotone.
+    probes: (n: number): readonly string[] => [`prefix v0 ${n - 1}`],
+  },
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

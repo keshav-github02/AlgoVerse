@@ -9,7 +9,7 @@ import { create } from 'zustand';
 import type { NodeId } from '@algoverse/core';
 
 /** `diff` compares two versions; `live` shows the structure as it stands. */
-export type ViewMode = 'live' | 'diff';
+export type ViewMode = 'live' | 'diff' | 'complexity';
 
 interface UiState {
   readonly pluginId: string;

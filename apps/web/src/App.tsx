@@ -7,6 +7,8 @@ import { Console } from './components/Console.tsx';
 import { Inspector, Stats } from './components/Inspector.tsx';
 import { DiffPanel } from './components/Diff.tsx';
 import { computeDiff } from './diff.ts';
+import { measurePlugin } from './complexity.ts';
+import { Complexity } from './components/Complexity.tsx';
 import {
   autosave, clearAutosave, clearUrl, copy, readAutosave, readFromUrl, shareLink, urlError,
 } from './persist.ts';
@@ -105,6 +107,9 @@ export function App(): JSX.Element {
     return () => window.removeEventListener('keydown', onKey);
   }, [playback]);
 
+  // Benchmarks run the plugin at six sizes, so memoise per plugin.
+  const report = useMemo(() => measurePlugin(plugin), [plugin]);
+
   const view = session.view();
   const onSelect = useCallback((id: NodeId | null) => select(id), [select]);
 
@@ -197,7 +202,9 @@ export function App(): JSX.Element {
             <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-1.5">
               <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">Canvas</span>
               <span className="font-mono text-[10.5px] text-[var(--dim)]">
-                {mode === 'diff' && diff !== null
+                {mode === 'complexity' && report !== null
+                  ? `${report.command} · declared ${report.declared ?? '?'} · measured O(${report.bestFit.growth.label})`
+                  : mode === 'diff' && diff !== null
                   ? `v${diffA} vs v${Math.min(diffB, versions.length - 1)} - ${diff.diff.shared.length} shared`
                   : describeEvent(session.currentEvent())}
               </span>
@@ -210,17 +217,29 @@ export function App(): JSX.Element {
                     />compare
                   </label>
                 )}
+                {report !== null && (
+                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
+                    <input
+                      type="checkbox" checked={mode === 'complexity'}
+                      onChange={() => setMode(mode === 'complexity' ? 'live' : 'complexity')}
+                    />cost
+                  </label>
+                )}
                 <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
                   <input type="checkbox" checked={showLabels} onChange={toggleLabels} />labels
                 </label>
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-3">
+              {mode === 'complexity' ? (
+                <Complexity report={report} pluginName={plugin.meta.name} />
+              ) : (
               <Scene
                 scene={view.scene} visited={diff === null ? view.visited : []} selected={selected}
                 showLabels={showLabels} onSelect={onSelect}
                 {...(diff === null ? {} : { emphasis: diff.emphasis })}
               />
+              )}
             </div>
           </section>
           <section className="flex min-h-0 flex-col rounded-lg border border-[var(--line)] bg-[var(--panel)]">
