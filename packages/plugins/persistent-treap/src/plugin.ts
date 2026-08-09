@@ -469,5 +469,15 @@ export const persistentTreap: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainTreap,
+  benchmark: {
+    sizes: [8, 16, 32, 64, 128, 256],
+    command: 'find',
+    setup: (n: number): readonly string[] => [`build [${Array.from({ length: n }, (_, i) => i + 1).join(' ')}]`],
+    // The bound is expected, not guaranteed: one lookup samples one random
+    // path. Averaging over the whole key range measures the average depth,
+    // which is what "expected" actually claims.
+    probes: (n: number): readonly string[] =>
+      Array.from({ length: Math.min(n, 32) }, (_, i) => `find v0 ${Math.floor((i * n) / Math.min(n, 32)) + 1}`),
+  },
   createInstance: (ctx: EngineContext): PluginInstance => new Instance(ctx.rng),
 };

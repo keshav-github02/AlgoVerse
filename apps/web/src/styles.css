@@ -8,7 +8,13 @@
   --dim: #596775;
   --faint: #8695a3;
   --bad: #b3341f;
+  --good: #177a52;
   --accent: #2c63c9;
+
+  /* Chart series. Validated for CVD separation against the panel surface;
+     dark is stepped separately rather than flipped. */
+  --chart-measured: #2c63c9;
+  --chart-declared: #9c6612;
 
   /* Consumed by the renderer's own stylesheet. */
   --av-node-bg: #ffffff;
@@ -32,7 +38,10 @@
     --dim: #8494a3;
     --faint: #63707c;
     --bad: #f08a72;
+    --good: #4bc38c;
     --accent: #5b93f0;
+    --chart-measured: #5b93f0;
+    --chart-declared: #bd8a3a;
 
     --av-node-bg: #1a222a;
     --av-text: #dbe3eb;
