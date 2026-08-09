@@ -73,7 +73,7 @@ export const explainTrie: Explainer = (event: SimEvent, ctx: ExplainContext): st
     case 'VersionCommitted': {
       const fresh = [...ctx.after.nodes.values()].filter((n) => n.origin === event.version).length;
       return event.version === 0
-        ? `Version 0 is complete with ${ctx.after.nodes.size} nodes — far fewer than the total ` +
+        ? `Version 0 is complete with ${ctx.after.nodes.size} nodes - far fewer than the total ` +
           `letters, because the words share their prefixes.`
         : `Version ${event.version} is complete. It allocated ${fresh} nodes, one per letter of ` +
           `the new word, and shares everything else with v${event.version - 1}.`;

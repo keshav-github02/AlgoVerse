@@ -219,7 +219,7 @@ plugins early rather than after the contract has hardened.
 ### What the fourth plugin found
 
 The treap is the first plugin to draw from `ctx.rng`. Until it existed, every plugin took `_ctx`
-and ignored it — so the save format's central claim, that replay is sound *because* randomness comes
+and ignored it - so the save format's central claim, that replay is sound *because* randomness comes
 from a seed carried in the file, had never been exercised. It now is: the same seed rebuilds the
 same tree, a different seed builds a different one, and every version holds the right keys under
 either.
@@ -229,10 +229,10 @@ It also forced two changes:
 | Assumption | Why it broke | Fix |
 | --- | --- | --- |
 | Every node has a depth | A shared subtree sits at different depths in different versions, so no single number is true | `depth` is optional; layout derives it breadth-first from the roots when absent |
-| A plugin only allocates what it keeps | Split-then-merge insert copied each path twice and orphaned the first copy — 64% of the canvas was unreachable | Insert descends and splits once; build constructs directly instead of inserting repeatedly. The conformance kit now checks it |
+| A plugin only allocates what it keeps | Split-then-merge insert copied each path twice and orphaned the first copy - 64% of the canvas was unreachable | Insert descends and splits once; build constructs directly instead of inserting repeatedly. The conformance kit now checks it |
 
 That last one is the useful one. **"Every allocated node is reachable"** is a generic property, and
-the kit now enforces it for every plugin — it catches wasted allocation that nothing else would
+the kit now enforces it for every plugin - it catches wasted allocation that nothing else would
 notice, because the result still looks correct and merely renders a canvas full of debris.
 
 ### What the fifth plugin found
@@ -247,7 +247,7 @@ exactly what a spec-driven parser is for: the console picked up `build [cat car 
 Two problems, both caught by checks written for earlier plugins:
 
 - **The conformance kit could not probe it.** Its bad-semantics probe synthesises a call for every
-  versioned command, and only knew how to invent numbers — so against the trie it reported "could
+  versioned command, and only knew how to invent numbers - so against the trie it reported "could
   not parse probe" rather than testing anything. It now has a stand-in per kind.
 - **`build` stranded 8 of 22 nodes.** Inserting the words one at a time path-copies on every
   insert and commits only the final root, exactly as the treap's build did. The
@@ -256,7 +256,7 @@ Two problems, both caught by checks written for earlier plugins:
 
 The second is the argument for pushing findings into the kit rather than fixing them once. Building
 the trie's shape first and allocating bottom-up brings it to 6 nodes for the 10 letters of
-`cat car card` — the prefix sharing the structure exists for.
+`cat car card` - the prefix sharing the structure exists for.
 
 Nothing else needed changing. A node stands for a prefix, so its depth is its prefix length and is
 stable across versions; children are ordered by the letter on the pointer, which the layout engine's

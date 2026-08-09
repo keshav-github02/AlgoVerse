@@ -3,7 +3,7 @@
  *
  * Words share their prefixes, so a node stands for a prefix rather than a
  * value. Inserting copies the O(len) nodes along the word's own path and reuses
- * every other branch — the same persistence trick as the other structures, but
+ * every other branch - the same persistence trick as the other structures, but
  * over a node with up to twenty-six children rather than two.
  *
  * That fan-out is the point of building it: everything before this had at most
@@ -200,7 +200,7 @@ class Instance implements PluginInstance {
     /**
      * Shaped first, allocated second. Inserting the words one at a time would
      * path-copy on every insert and commit only the final root, leaving every
-     * intermediate node unreachable — the same waste the treap's build had.
+     * intermediate node unreachable - the same waste the treap's build had.
      */
     interface Draft { terminal: boolean; readonly kids: Map<string, Draft> }
     const draft: Draft = { terminal: false, kids: new Map() };
