@@ -262,35 +262,6 @@ Nothing else needed changing. A node stands for a prefix, so its depth is its pr
 stable across versions; children are ordered by the letter on the pointer, which the layout engine's
 natural sort already handled. Twenty-six children lay out a to z with no overlap.
 
-<<<<<<< Updated upstream
-=======
-### What the fifth plugin found
-
-The trie is the first structure whose arguments are not numbers, and the first whose nodes have more
-than two children. It needed one contract extension and caught two things.
-
-`word` and `word-list` join `int`, `version` and `int-list` as parameter kinds. Adding one is
-exactly what a spec-driven parser is for: the console picked up `build [cat car dog]` and
-`insert v0 care` with no console changes, because it never knew the kinds it already had either.
-
-Two problems, both caught by checks written for earlier plugins:
-
-- **The conformance kit could not probe it.** Its bad-semantics probe synthesises a call for every
-  versioned command, and only knew how to invent numbers - so against the trie it reported "could
-  not parse probe" rather than testing anything. It now has a stand-in per kind.
-- **`build` stranded 8 of 22 nodes.** Inserting the words one at a time path-copies on every
-  insert and commits only the final root, exactly as the treap's build did. The
-  "every allocated node is reachable" check, added *because* of the treap, caught the identical
-  mistake in a plugin written weeks later and before it ever reached a screen.
-
-The second is the argument for pushing findings into the kit rather than fixing them once. Building
-the trie's shape first and allocating bottom-up brings it to 6 nodes for the 10 letters of
-`cat car card` - the prefix sharing the structure exists for.
-
-Nothing else needed changing. A node stands for a prefix, so its depth is its prefix length and is
-stable across versions; children are ordered by the letter on the pointer, which the layout engine's
-natural sort already handled. Twenty-six children lay out a to z with no overlap.
-
 ### The one that is meant to be bad
 
 The unbalanced BST is the treap with the randomness removed, and it is the first structure here
@@ -315,8 +286,6 @@ Adding it also generalised complexity parsing. The size variable's name carries 
 identifier now normalises to `n`. Two distinct identifiers still fail to parse, because
 `O(E log V)` genuinely cannot be fitted on one axis.
 
->>>>>>> Stashed changes
->>>>>>>>> Temporary merge branch 2
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets
