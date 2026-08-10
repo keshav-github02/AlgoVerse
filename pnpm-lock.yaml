@@ -38,6 +38,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@algoverse/plugin-persistent-avl':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-avl
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-bit
@@ -79,6 +82,15 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/plugins/persistent-avl:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
 
   packages/plugins/persistent-bit:
     dependencies:
@@ -139,6 +151,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+      '@algoverse/plugin-persistent-avl':
+        specifier: workspace:*
+        version: link:../plugins/persistent-avl
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../plugins/persistent-bit

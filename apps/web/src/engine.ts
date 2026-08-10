@@ -22,9 +22,10 @@ import { persistentBit } from '@algoverse/plugin-persistent-bit';
 import { persistentTreap } from '@algoverse/plugin-persistent-treap';
 import { persistentTrie } from '@algoverse/plugin-persistent-trie';
 import { persistentBst } from '@algoverse/plugin-persistent-bst';
+import { persistentAvl } from '@algoverse/plugin-persistent-avl';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, stack];
 
 export interface HistoryEntry {
   readonly line: string;

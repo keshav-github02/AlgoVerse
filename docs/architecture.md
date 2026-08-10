@@ -286,6 +286,38 @@ Adding it also generalised complexity parsing. The size variable's name carries 
 identifier now normalises to `n`. Two distinct identifiers still fail to parse, because
 `O(E log V)` genuinely cannot be fitted on one axis.
 
+### The answer to the one that is meant to be bad
+
+The AVL tree is Phase 3's first structure and the direct reply to the unbalanced BST. Same sorted
+input, same command, three different guarantees:
+
+| Structure | Worst lookup | Average |
+| --- | --- | --- |
+| Persistent BST | 64 nodes | 32.5 |
+| Persistent Treap | 10 nodes | 6.3 |
+| Persistent AVL | 7 nodes | 5.1 |
+
+Its benchmark deliberately uses the same sorted input as the BST's, so the two cost charts sit
+side by side: one straight rising line, one logarithm.
+
+**Rotations are the first operation that rearranges a node's children rather than copying them
+along a path** — and they needed no new event kind. A rotation only changes which children the
+newly-allocated nodes are handed, so `NodeAllocated`, `PointerSet` and `NodeReused` already
+describe it exactly. The explainer supplies the word "rotation"; core never learns it. Persistence
+makes rotation cheaper to model than in a mutable tree, where it is a genuine pointer shuffle.
+
+Balance rides on `StructureNode.role`, which is already a free-form string: every node reports
+`balanced`, `left-heavy` or `right-heavy`. Those three values *are* the invariant, so it can be
+read straight off a node in the inspector.
+
+The invariant is verified by **recomputing every subtree height from the graph** rather than
+trusting the heights the plugin stores. A wrong stored height would otherwise make an unbalanced
+tree report itself as balanced — the check would agree with the bug. Confirmed over 40 sorted
+inserts followed by 20 erases, and again after every operation of a 240-operation property test.
+
+Nothing in the contract needed changing. Five plugins ago each new structure exposed a leak; the
+last two have not, which is the more useful signal.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets
