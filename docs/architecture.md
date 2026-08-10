@@ -316,6 +316,7 @@ identifier now normalises to `n`. Two distinct identifiers still fail to parse, 
 `O(E log V)` genuinely cannot be fitted on one axis.
 
 >>>>>>> Stashed changes
+>>>>>>>>> Temporary merge branch 2
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets

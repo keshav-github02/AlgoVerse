@@ -258,4 +258,3 @@ export class Session {
     return own ?? describeEvent(event);
   }
 }
-
