@@ -19,7 +19,12 @@
     "react-dom": "^18.3.1",
     "zustand": "^5.0.2",
     "@algoverse/plugin-persistent-bit": "workspace:*",
+<<<<<<< Updated upstream
+    "@algoverse/plugin-persistent-treap": "workspace:*"
+=======
     "@algoverse/plugin-persistent-treap": "workspace:*",
-    "@algoverse/plugin-persistent-trie": "workspace:*"
+    "@algoverse/plugin-persistent-trie": "workspace:*",
+    "@algoverse/plugin-persistent-bst": "workspace:*"
+>>>>>>> Stashed changes
   }
 }

@@ -400,7 +400,7 @@ check('every chart fits inside its plot area', (() => {
     if (points.some((pt) => pt.x < box.left - 0.5 || pt.x > box.width - box.right + 0.5)) return false;
   }
   return true;
-})(), '4 plugins');
+})(), `${PLUGINS.length} plugins`);
 
 check('the x axis is evenly spaced, which is what makes it logarithmic', (() => {
   const r = measurePlugin(segTree);
