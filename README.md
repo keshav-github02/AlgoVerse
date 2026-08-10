@@ -55,7 +55,7 @@ Four packages, split along the seams that actually matter:
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
 <<<<<<< Updated upstream
-| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, stack |
+| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, trie, stack |
 =======
 | `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, trie, BST, stack |
 >>>>>>> Stashed changes
@@ -95,7 +95,7 @@ algoverse/
 | --- | --- |
 | 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
 <<<<<<< Updated upstream
-| 2 | Persistent BIT **(done)**, treap **(done)**, trie, BST |
+| 2 | Persistent BIT **(done)**, treap **(done)**, trie **(done)**, BST |
 =======
 | 2 | Persistent BIT, treap, trie and BST — **complete** |
 >>>>>>> Stashed changes

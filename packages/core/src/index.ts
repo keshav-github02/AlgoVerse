@@ -62,6 +62,8 @@ export {
   complete,
   getInt,
   getIntList,
+  getWord,
+  getWordList,
   getVersion,
   help,
   paramSyntax,
