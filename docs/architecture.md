@@ -235,8 +235,6 @@ That last one is the useful one. **"Every allocated node is reachable"** is a ge
 the kit now enforces it for every plugin - it catches wasted allocation that nothing else would
 notice, because the result still looks correct and merely renders a canvas full of debris.
 
-<<<<<<< Updated upstream
-=======
 ### What the fifth plugin found
 
 The trie is the first structure whose arguments are not numbers, and the first whose nodes have more
@@ -287,8 +285,6 @@ Adding it also generalised complexity parsing. The size variable's name carries 
 `O(len)`, `O(height)` and `O(n)` are all linear in whatever the benchmark varies — so any single
 identifier now normalises to `n`. Two distinct identifiers still fail to parse, because
 `O(E log V)` genuinely cannot be fitted on one axis.
-
->>>>>>> Stashed changes
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets

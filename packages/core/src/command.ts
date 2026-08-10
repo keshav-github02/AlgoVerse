@@ -10,7 +10,7 @@
  * caused them so a console can underline it.
  */
 
-export type ParamKind = 'int' | 'version' | 'int-list';
+export type ParamKind = 'int' | 'version' | 'int-list' | 'word' | 'word-list';
 
 export interface ParamSpec {
   readonly name: string;
@@ -53,7 +53,9 @@ export interface OperationError {
 export type ArgValue =
   | { readonly kind: 'int'; readonly value: number }
   | { readonly kind: 'version'; readonly index: number }
-  | { readonly kind: 'int-list'; readonly values: readonly number[] };
+  | { readonly kind: 'int-list'; readonly values: readonly number[] }
+  | { readonly kind: 'word'; readonly value: string }
+  | { readonly kind: 'word-list'; readonly values: readonly string[] };
 
 export interface ParsedCommand {
   readonly name: string;
@@ -68,7 +70,8 @@ export type ParseResult =
 /* ── Presentation, derived from specs ──────────────────────────────── */
 
 export function paramSyntax(p: ParamSpec): string {
-  return p.kind === 'int-list' ? `[${p.name}...]` : `<${p.name}>`;
+  const isList = p.kind === 'int-list' || p.kind === 'word-list';
+  return isList ? `[${p.name}...]` : `<${p.name}>`;
 }
 
 export function usage(spec: CommandSpec): string {
@@ -136,6 +139,8 @@ function tokenize(input: string): readonly Token[] {
 
 const INT = /^[+-]?\d+$/;
 const VERSION = /^v(\d+)$/i;
+/** Letters only: digits and punctuation would collide with the other kinds. */
+const WORD = /^[a-z]+$/i;
 
 function fail(
   code: ErrorCode,
@@ -218,19 +223,22 @@ function consume(
       }
       return { ok: true, value: { kind: 'version', index: Number(m[1]) }, next: i + 1 };
     }
-    case 'int-list': {
+    case 'int-list':
+    case 'word-list': {
+      const words = p.kind === 'word-list';
+      const example = words ? '[cat car dog]' : '[1 2 3]';
       if (token.text !== '[') {
         return {
           ok: false,
           error: fail(
             'BAD_ARGUMENT',
-            `${p.name} must be a bracketed list, like [1 2 3].`,
+            `${p.name} must be a bracketed list, like ${example}.`,
             [token.start, token.end],
             hint,
           ),
         };
       }
-      const values: number[] = [];
+      const items: (number | string)[] = [];
       let j = i + 1;
       for (;;) {
         const t = tokens[j];
@@ -244,22 +252,48 @@ function consume(
           j += 1;
           break;
         }
-        if (!INT.test(t.text)) {
-          return {
-            ok: false,
-            error: fail('BAD_ARGUMENT', `"${t.text}" is not a whole number.`, [t.start, t.end], hint),
-          };
+        if (words) {
+          if (!WORD.test(t.text)) {
+            return {
+              ok: false,
+              error: fail('BAD_ARGUMENT', `"${t.text}" is not a word.`, [t.start, t.end], hint),
+            };
+          }
+          items.push(t.text.toLowerCase());
+        } else {
+          if (!INT.test(t.text)) {
+            return {
+              ok: false,
+              error: fail('BAD_ARGUMENT', `"${t.text}" is not a whole number.`, [t.start, t.end], hint),
+            };
+          }
+          items.push(Number(t.text));
         }
-        values.push(Number(t.text));
         j += 1;
       }
-      if (values.length === 0) {
+      if (items.length === 0) {
         return {
           ok: false,
           error: fail('BAD_ARGUMENT', `${p.name} cannot be empty.`, [token.start, token.end], hint),
         };
       }
-      return { ok: true, value: { kind: 'int-list', values }, next: j };
+      return words
+        ? { ok: true, value: { kind: 'word-list', values: items as string[] }, next: j }
+        : { ok: true, value: { kind: 'int-list', values: items as number[] }, next: j };
+    }
+    case 'word': {
+      if (!WORD.test(token.text)) {
+        return {
+          ok: false,
+          error: fail(
+            'BAD_ARGUMENT',
+            `"${token.text}" is not a word. Words are letters only.`,
+            [token.start, token.end],
+            hint,
+          ),
+        };
+      }
+      return { ok: true, value: { kind: 'word', value: token.text.toLowerCase() }, next: i + 1 };
     }
     default: {
       const never: never = p.kind;
@@ -340,5 +374,17 @@ export function getVersion(cmd: ParsedCommand, param: string): number {
 export function getIntList(cmd: ParsedCommand, param: string): readonly number[] {
   const v = cmd.args.get(param);
   if (v?.kind !== 'int-list') throw new Error(`${cmd.name}: "${param}" is not an int-list`);
+  return v.values;
+}
+
+export function getWord(cmd: ParsedCommand, param: string): string {
+  const v = cmd.args.get(param);
+  if (v?.kind !== 'word') throw new Error(`${cmd.name}: "${param}" is not a word`);
+  return v.value;
+}
+
+export function getWordList(cmd: ParsedCommand, param: string): readonly string[] {
+  const v = cmd.args.get(param);
+  if (v?.kind !== 'word-list') throw new Error(`${cmd.name}: "${param}" is not a word-list`);
   return v.values;
 }

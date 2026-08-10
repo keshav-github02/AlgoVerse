@@ -92,8 +92,15 @@ function logDescribesStructure(events: readonly SimEvent[], structure: Structure
 function synthesize(spec: CommandSpec, versionText: string): string {
   return [
     spec.name,
-    ...spec.params.map((p) =>
-      p.kind === 'version' ? versionText : p.kind === 'int' ? '0' : '[1 2 3]'),
+    // Every param kind needs a stand-in, or a plugin using a newer kind
+    // reports "could not parse probe" instead of actually being probed.
+    ...spec.params.map((p) => ({
+      version: versionText,
+      int: '0',
+      'int-list': '[1 2 3]',
+      word: 'probe',
+      'word-list': '[probe]',
+    }[p.kind])),
   ].join(' ');
 }
 

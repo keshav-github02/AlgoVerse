@@ -20,17 +20,11 @@ import {
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
 import { persistentBit } from '@algoverse/plugin-persistent-bit';
 import { persistentTreap } from '@algoverse/plugin-persistent-treap';
-<<<<<<< Updated upstream
-import { stack } from '@algoverse/plugin-stack';
-
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, stack];
-=======
 import { persistentTrie } from '@algoverse/plugin-persistent-trie';
 import { persistentBst } from '@algoverse/plugin-persistent-bst';
 import { stack } from '@algoverse/plugin-stack';
 
 export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, stack];
->>>>>>> Stashed changes
 
 export interface HistoryEntry {
   readonly line: string;
@@ -258,4 +252,3 @@ export class Session {
     return own ?? describeEvent(event);
   }
 }
-

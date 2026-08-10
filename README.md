@@ -54,11 +54,7 @@ Four packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-<<<<<<< Updated upstream
-| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, stack |
-=======
 | `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, trie, BST, stack |
->>>>>>> Stashed changes
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
@@ -94,11 +90,7 @@ algoverse/
 | Phase | Scope |
 | --- | --- |
 | 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
-<<<<<<< Updated upstream
-| 2 | Persistent BIT **(done)**, treap **(done)**, trie, BST |
-=======
 | 2 | Persistent BIT, treap, trie and BST — **complete** |
->>>>>>> Stashed changes
 | 3 | AVL, red-black, B-tree, B+ tree, splay |
 | 4 | Graphs - DFS, BFS, Dijkstra, Prim, Kruskal, SCC, bridges, articulation points |
 | 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
