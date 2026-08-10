@@ -39,9 +39,19 @@ export function parseComplexity(declared: string): Growth | null {
     .replace(/\s+/g, ' ')
     .trim();
 
-  const normalised = body
+  /**
+   * The size variable's name carries no information: `O(len)`, `O(height)` and
+   * `O(n)` are all linear in whatever is being varied, and the benchmark
+   * decides what that is. Two distinct names mean two variables, which a
+   * single-variable fit cannot describe — `O(E log V)` stays unreadable.
+   */
+  const withLog = body.replace(/\blg\b|\bln\b/g, 'log');
+  const names = new Set((withLog.match(/[a-z]+/g) ?? []).filter((w) => w !== 'log'));
+  if (names.size > 1) return null;
+
+  const normalised = withLog
     .replace(/\^2|²/g, '^2')
-    .replace(/\blg\b|\bln\b/g, 'log');
+    .replace(/[a-z]+/g, (w) => (w === 'log' ? 'log' : 'n'));
 
   switch (normalised) {
     case '1': return GROWTH_CLASSES[0] as Growth;

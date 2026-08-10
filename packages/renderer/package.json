@@ -15,6 +15,12 @@
     "@algoverse/plugin-persistent-segment-tree": "workspace:*",
     "@algoverse/plugin-stack": "workspace:*",
     "@algoverse/plugin-persistent-bit": "workspace:*",
+<<<<<<< Updated upstream
     "@algoverse/plugin-persistent-treap": "workspace:*"
+=======
+    "@algoverse/plugin-persistent-treap": "workspace:*",
+    "@algoverse/plugin-persistent-trie": "workspace:*",
+    "@algoverse/plugin-persistent-bst": "workspace:*"
+>>>>>>> Stashed changes
   }
 }

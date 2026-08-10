@@ -41,6 +41,9 @@ importers:
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-bit
+      '@algoverse/plugin-persistent-bst':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-bst
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-segment-tree
@@ -75,6 +78,15 @@ importers:
         version: link:../core
 
   packages/plugins/persistent-bit:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/persistent-bst:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -118,6 +130,9 @@ importers:
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../plugins/persistent-bit
+      '@algoverse/plugin-persistent-bst':
+        specifier: workspace:*
+        version: link:../plugins/persistent-bst
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../plugins/persistent-segment-tree
