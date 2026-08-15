@@ -13,6 +13,11 @@ export interface StructureNode {
   readonly id: NodeId;
   readonly label: string;
   readonly value: number;
+  /**
+   * Several values, when one node holds more than a single key. A B-tree node
+   * is the case this exists for; everything else leaves it absent.
+   */
+  readonly values?: readonly number[];
   readonly role: string;
   /**
    * Vertical level. Optional: a shared subtree can sit at different depths in

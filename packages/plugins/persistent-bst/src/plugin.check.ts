@@ -1,5 +1,5 @@
 /**
- * Conformance and property tests for the unbalanced BST — including the
+ * Conformance and property tests for the unbalanced BST - including the
  * degeneration it exists to demonstrate.
  *
  *     node packages/plugins/persistent-bst/src/plugin.check.ts

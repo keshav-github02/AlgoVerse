@@ -79,6 +79,22 @@ function naturalCompare(a: string, b: string): number {
   return 0;
 }
 
+/**
+ * The text a node shows, and how wide that makes it.
+ *
+ * Width used to be one number for every node in the scene, which held while a
+ * node meant one value. A B-tree node holds several keys and needs room for
+ * them, so width follows content - for every plugin, not just that one.
+ */
+export function nodeText(node: StructureNode): string {
+  return node.values === undefined ? String(node.value) : node.values.join(' ');
+}
+
+function widthOf(node: StructureNode, o: LayoutOptions): number {
+  // Monospace at the renderer's value size, plus padding either side.
+  return Math.max(o.nodeWidth, nodeText(node).length * 9.6 + 18);
+}
+
 interface Slot {
   readonly key: string;
   readonly members: readonly StructureNode[];
@@ -137,7 +153,7 @@ function buildSlots(
   for (const [key, members] of grouped) {
     // Version order is the drawing order, so provenance reads left to right.
     members.sort((a, b) => (a.origin !== b.origin ? a.origin - b.origin : a.id - b.id));
-    const span = members.length * o.nodeWidth + (members.length - 1) * o.fanGap;
+    const span = members.reduce((w, m) => w + widthOf(m, o), 0) + (members.length - 1) * o.fanGap;
     slots.set(key, {
       key,
       members,
@@ -263,19 +279,23 @@ function layered(graph: StructureGraph, o: LayoutOptions): PositionedScene {
     }
   }
 
-  const step = o.nodeWidth + o.fanGap;
   const placed = new Map<NodeId, PositionedNode>();
   for (const s of slots.values()) {
     const y = o.margin + s.depth * (o.nodeHeight + o.levelGap);
-    s.members.forEach((n, i) => {
+    // Members are laid out left to right using their own widths, so a wide
+    // node in a slot pushes its neighbours rather than overlapping them.
+    let cursor = s.x - s.halfWidth;
+    for (const n of s.members) {
+      const w = widthOf(n, o);
       placed.set(n.id, {
         node: n,
-        x: s.x + (i - (s.members.length - 1) / 2) * step,
+        x: cursor + w / 2,
         y: y + o.nodeHeight / 2,
-        width: o.nodeWidth,
+        width: w,
         height: o.nodeHeight,
       });
-    });
+      cursor += w + o.fanGap;
+    }
   }
 
   return finish(graph, placed, o);
@@ -291,10 +311,10 @@ function stacked(graph: StructureGraph, o: LayoutOptions): PositionedScene {
   for (const n of ordered) {
     placed.set(n.id, {
       node: n,
-      x: o.margin + o.nodeWidth / 2,
+      x: o.margin + widthOf(n, o) / 2,
       // Depth 0 sits at the bottom, so a stack grows upward the way it reads.
       y: o.margin + (maxDepth - level(n)) * step + o.nodeHeight / 2,
-      width: o.nodeWidth,
+      width: widthOf(n, o),
       height: o.nodeHeight,
     });
   }
@@ -309,9 +329,9 @@ function gridded(graph: StructureGraph, o: LayoutOptions): PositionedScene {
     .forEach((n, i) => {
       placed.set(n.id, {
         node: n,
-        x: o.margin + (i % cols) * (o.nodeWidth + o.siblingGap) + o.nodeWidth / 2,
+        x: o.margin + (i % cols) * (o.nodeWidth + o.siblingGap) + widthOf(n, o) / 2,
         y: o.margin + Math.floor(i / cols) * (o.nodeHeight + o.levelGap / 2) + o.nodeHeight / 2,
-        width: o.nodeWidth,
+        width: widthOf(n, o),
         height: o.nodeHeight,
       });
     });
@@ -334,7 +354,7 @@ function ringed(graph: StructureGraph, o: LayoutOptions): PositionedScene {
         node,
         x: o.margin + radius + Math.cos(angle) * radius,
         y: o.margin + radius + Math.sin(angle) * radius,
-        width: o.nodeWidth,
+        width: widthOf(node, o),
         height: o.nodeHeight,
       });
     });

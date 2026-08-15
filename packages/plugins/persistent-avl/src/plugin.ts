@@ -3,8 +3,8 @@
  *
  * The answer to the plain BST. Every node keeps the height of its subtree, and
  * any insert or erase that leaves a node's two sides more than one level apart
- * is repaired by a rotation on the way back up. Sorted input — the input that
- * degenerates an unbalanced tree into a linked list — comes out logarithmic.
+ * is repaired by a rotation on the way back up. Sorted input - the input that
+ * degenerates an unbalanced tree into a linked list - comes out logarithmic.
  *
  * Rotations are the first operation here that rearranges a node's children
  * rather than copying them along a path. Persistence makes that cheap rather

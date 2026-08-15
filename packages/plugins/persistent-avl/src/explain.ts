@@ -64,7 +64,7 @@ export const explainAvl: Explainer = (event: SimEvent, ctx: ExplainContext): str
       const child = keyOf(ctx.after, event.node);
       const parent = keyOf(ctx.after, event.by);
       return `The subtree under key ${child ?? '?'} keeps its shape and its height, so the new ` +
-        `node for key ${parent ?? '?'} points at it rather than copying it — including when that ` +
+        `node for key ${parent ?? '?'} points at it rather than copying it - including when that ` +
         `new node is the product of a rotation.`;
     }
 
@@ -73,7 +73,7 @@ export const explainAvl: Explainer = (event: SimEvent, ctx: ExplainContext): str
       const rootKey = keyOf(ctx.after, event.roots[0] as NodeId);
       const leaning = [...ctx.after.nodes.values()].filter((n) => n.role !== 'balanced').length;
       return `Version ${event.version} is complete, rooted at key ${rootKey ?? '?'}. ` +
-        `${leaning} node${leaning === 1 ? '' : 's'} lean by one level and none by more — ` +
+        `${leaning} node${leaning === 1 ? '' : 's'} lean by one level and none by more - ` +
         `that bound is what makes the height logarithmic.`;
     }
 

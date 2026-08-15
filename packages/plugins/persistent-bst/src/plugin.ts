@@ -1,5 +1,5 @@
 /**
- * Persistent binary search tree — unbalanced, on purpose.
+ * Persistent binary search tree - unbalanced, on purpose.
  *
  * This is the treap with the randomness taken out, and it exists to show what
  * that randomness was buying. Insert keys in sorted order and every node has

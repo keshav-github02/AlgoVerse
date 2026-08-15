@@ -110,7 +110,8 @@ export function sceneElements(
       {
         tag: 'text',
         attrs: { className: 'av-value', x: n2(p.x), y: n2(y + p.height * 0.48), textAnchor: 'middle' },
-        text: String(node.value),
+        // A node may hold several keys; layout has already made room for them.
+        text: node.values === undefined ? String(node.value) : node.values.join(' '),
       },
     ];
     if (showLabels) {
@@ -138,7 +139,8 @@ export function sceneElements(
         className: classes.join(' '),
         'data-node': node.id,
         role: 'listitem',
-        'aria-label': `${node.role} ${node.label}, value ${node.value}` +
+        'aria-label': `${node.role} ${node.label}, ` +
+          `${node.values === undefined ? `value ${node.value}` : `keys ${node.values.join(', ')}`}` +
           (node.origin > 0 ? `, from generation ${node.origin}` : ''),
       },
       children,

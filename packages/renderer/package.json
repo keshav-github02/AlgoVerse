@@ -18,6 +18,7 @@
     "@algoverse/plugin-persistent-treap": "workspace:*",
     "@algoverse/plugin-persistent-trie": "workspace:*",
     "@algoverse/plugin-persistent-bst": "workspace:*",
-    "@algoverse/plugin-persistent-avl": "workspace:*"
+    "@algoverse/plugin-persistent-avl": "workspace:*",
+    "@algoverse/plugin-persistent-btree": "workspace:*"
   }
 }

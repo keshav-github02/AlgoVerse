@@ -281,8 +281,8 @@ That is what the treap's random priorities are buying, and it is now visible rat
 The BST's benchmark deliberately uses sorted input, so its cost chart draws a straight rising line
 against everything else's logarithm.
 
-Adding it also generalised complexity parsing. The size variable's name carries no information —
-`O(len)`, `O(height)` and `O(n)` are all linear in whatever the benchmark varies — so any single
+Adding it also generalised complexity parsing. The size variable's name carries no information -
+`O(len)`, `O(height)` and `O(n)` are all linear in whatever the benchmark varies - so any single
 identifier now normalises to `n`. Two distinct identifiers still fail to parse, because
 `O(E log V)` genuinely cannot be fitted on one axis.
 
@@ -301,7 +301,7 @@ Its benchmark deliberately uses the same sorted input as the BST's, so the two c
 side by side: one straight rising line, one logarithm.
 
 **Rotations are the first operation that rearranges a node's children rather than copying them
-along a path** — and they needed no new event kind. A rotation only changes which children the
+along a path** - and they needed no new event kind. A rotation only changes which children the
 newly-allocated nodes are handed, so `NodeAllocated`, `PointerSet` and `NodeReused` already
 describe it exactly. The explainer supplies the word "rotation"; core never learns it. Persistence
 makes rotation cheaper to model than in a mutable tree, where it is a genuine pointer shuffle.
@@ -312,11 +312,38 @@ read straight off a node in the inspector.
 
 The invariant is verified by **recomputing every subtree height from the graph** rather than
 trusting the heights the plugin stores. A wrong stored height would otherwise make an unbalanced
-tree report itself as balanced — the check would agree with the bug. Confirmed over 40 sorted
+tree report itself as balanced - the check would agree with the bug. Confirmed over 40 sorted
 inserts followed by 20 erases, and again after every operation of a 240-operation property test.
 
 Nothing in the contract needed changing. Five plugins ago each new structure exposed a leak; the
 last two have not, which is the more useful signal.
+
+### The first node that is not a single value
+
+The B-tree holds up to three keys per node, and that broke two assumptions the contract had carried
+unnoticed since the very first plugin.
+
+| Assumption | Why it broke | Fix |
+| --- | --- | --- |
+| A node holds one value | `StructureNode.value` is a single number. A B-tree node holds several keys and none of them is *the* value | `values?: readonly number[]` alongside it, carried through the event log and drawn by the renderer |
+| Every node is the same width | Layout wrote `o.nodeWidth` onto every node, even though `PositionedNode.width` had been per-node in the type all along | Width follows the text a node shows, for every plugin rather than just this one |
+
+The second is the more interesting mistake. The *type* was right — width was per-node from the
+beginning — and the implementation quietly filled it with a constant. Nothing failed, because until
+now every node really did show one short number.
+
+Its search cost also measures lower than the binary trees, at a constant of 0.66 against the AVL's
+1.17: a B-tree compares several keys per node read, so it reads fewer nodes for the same number of
+keys. That is the whole point of fan-out, and it now shows up as a number rather than a claim.
+
+**Deletion is deliberately absent.** Removing from a B-tree needs borrowing and merging between
+siblings, which is markedly more intricate than the rest of the plugin; a wrong implementation would
+be worse than a missing one. The command simply is not declared, so the console never offers it.
+
+The invariants are recomputed from the graph rather than trusted: key counts within bounds, keys
+sorted, every key inside the range its parent implies, child count exactly one more than key count,
+and all leaves at the same depth. Verified over a 200-key build, across thirty successive versions,
+and after every operation of a 250-operation property test.
 
 Two residual compromises, both recorded rather than fixed:
 
@@ -455,7 +482,7 @@ Two different things share the word "complexity", and the original specification
 Keeping them separate enables the feature worth having, which now exists: measured cost plotted
 against the theoretical curve.
 
-A plugin declares a `benchmark` — how to build itself at a given size, and which command to time —
+A plugin declares a `benchmark` - how to build itself at a given size, and which command to time -
 because the engine cannot know either. Everything after that is generic. Cost is counted in
 **events, not seconds**: a wall-clock reading of a teaching-sized structure measures the JIT, while
 the number of nodes an operation touches is what the complexity claim is actually about.
@@ -477,7 +504,7 @@ that disagrees with its own behaviour is then visible rather than assumed:
 
 The BIT's prefix walk is exactly `log₂ n`. The segment tree's constant of 3.83 is the "up to four
 nodes per level" bound for range queries, visible in the data rather than asserted. The treap's
-looser 0.939 is what *expected* looks like next to a guarantee — which is the distinction the word
+looser 0.939 is what *expected* looks like next to a guarantee - which is the distinction the word
 is carrying, and it is now something you can see.
 
 The chart spaces its x axis by `log₂ n`, so a logarithmic cost draws as a **straight line**. On a

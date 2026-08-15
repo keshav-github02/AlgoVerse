@@ -22,6 +22,7 @@ export function sceneToStructure(scene: SceneState, layoutHint: LayoutHint): Str
       id,
       label: n.label,
       value: n.value,
+      ...(n.values === undefined ? {} : { values: n.values }),
       role: n.role,
       ...(n.depth === undefined ? {} : { depth: n.depth }),
       slot: n.slot,

@@ -20,6 +20,8 @@ export type SimEvent =
       readonly kind: 'NodeAllocated';
       readonly node: NodeId;
       readonly value: number;
+      /** For a node holding several keys at once, such as a B-tree node. */
+      readonly values?: readonly number[];
       readonly label: string;
       readonly role: string;
       /** Omit when the node sits at different depths in different versions. */
@@ -44,6 +46,7 @@ export type SimEvent =
 
 export interface SceneNode {
   readonly value: number;
+  readonly values?: readonly number[];
   readonly label: string;
   readonly role: string;
   readonly depth?: number;
@@ -80,6 +83,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
       nodes.set(e.node, {
         value: e.value, label: e.label, role: e.role,
         slot: e.slot, origin: e.origin,
+        ...(e.values === undefined ? {} : { values: e.values }),
         ...(e.depth === undefined ? {} : { depth: e.depth }),
         children: new Map(),
       });
