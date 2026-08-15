@@ -53,6 +53,9 @@ importers:
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-segment-tree
+      '@algoverse/plugin-persistent-splay':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-splay
       '@algoverse/plugin-persistent-treap':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-treap
@@ -131,6 +134,15 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/persistent-splay:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/persistent-treap:
     dependencies:
       '@algoverse/core':
@@ -178,6 +190,9 @@ importers:
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../plugins/persistent-segment-tree
+      '@algoverse/plugin-persistent-splay':
+        specifier: workspace:*
+        version: link:../plugins/persistent-splay
       '@algoverse/plugin-persistent-treap':
         specifier: workspace:*
         version: link:../plugins/persistent-treap

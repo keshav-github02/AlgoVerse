@@ -345,6 +345,32 @@ sorted, every key inside the range its parent implies, child count exactly one m
 and all leaves at the same depth. Verified over a 200-key build, across thirty successive versions,
 and after every operation of a 250-operation property test.
 
+### The first read that writes
+
+A splay tree drags whatever you looked up to the root, so `access` is a lookup *and* a
+restructuring. Under persistence that means **a read produces a version** — and the version it read
+keeps its old shape, which turns an invisible side effect into something you can scrub back to.
+
+The contract already allowed it. `statsDelta` reports `{ versions: 1, queries: 1 }` for the same
+operation, and both are true: the user asked a question, and the shape changed. A separate
+`contains` command does the read-only version, so the distinction is available rather than assumed.
+
+Its benchmark measures **a run of accesses, not one**. Each probe reads the version the previous
+probe produced, so the rearrangement carries forward. That is the only way an amortised bound can be
+observed: one access on a 64-key spine reads 32 nodes, and the same tree averages 4.6 over 64
+accesses. A single probe would have measured the worst case and declared `O(log n) amortised`
+false. The looser fit that results — R² 0.71 against the AVL's 0.97 — is itself the finding:
+amortised is a claim about sequences, and it looks noisier than a guarantee because it is one.
+
+Writing it also produced the sharpest instance yet of the conformance kit's reachability rule.
+Splaying moves a node up **two** levels, and the natural implementation rotates twice over an
+intermediate — which strands that intermediate the moment the second rotation rebuilds it. The first
+attempt left 10 of 23 nodes unreachable, the second 2 of 15. Computing each case's final shape in
+one step brought it to zero and cut the same script from 23 nodes to 13.
+
+Nothing in that is visible from the answers, which were correct throughout. It shows up only as a
+canvas full of debris, which is exactly why the rule lives in the kit rather than in one plugin.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets
