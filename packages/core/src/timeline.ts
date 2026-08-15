@@ -31,7 +31,18 @@ export type SimEvent =
     }
   | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
   /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
-  | { readonly kind: 'PointerSet'; readonly from: NodeId; readonly slot: string; readonly to: NodeId | null }
+  | {
+      readonly kind: 'PointerSet';
+      readonly from: NodeId;
+      readonly slot: string;
+      readonly to: NodeId | null;
+      /**
+       * `link` for a pointer that is not part of the hierarchy. Kept in the
+       * log rather than derived when drawing, because a pointer the picture
+       * shows and the log does not carry is a pointer replay cannot rebuild.
+       */
+      readonly pointer?: 'child' | 'link';
+    }
   | { readonly kind: 'NodeReused'; readonly node: NodeId; readonly by: NodeId }
   | { readonly kind: 'NodeVisited'; readonly node: NodeId }
   /** Replaces the current entry points. */
@@ -54,6 +65,8 @@ export interface SceneNode {
   readonly origin: number;
   /** Keyed by slot name, so a node may have two children or twenty. */
   readonly children: ReadonlyMap<string, NodeId>;
+  /** Pointers that are not hierarchy: a leaf chain, a successor thread. */
+  readonly links: ReadonlyMap<string, NodeId>;
 }
 
 export interface SceneState {
@@ -86,6 +99,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
         ...(e.values === undefined ? {} : { values: e.values }),
         ...(e.depth === undefined ? {} : { depth: e.depth }),
         children: new Map(),
+        links: new Map(),
       });
       return { ...s, nodes };
     }
@@ -98,11 +112,13 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
     case 'PointerSet': {
       const parent = s.nodes.get(e.from);
       if (parent === undefined) return s;
-      const children = new Map(parent.children);
-      if (e.to === null) children.delete(e.slot);
-      else children.set(e.slot, e.to);
+      const into = new Map(e.pointer === 'link' ? parent.links : parent.children);
+      if (e.to === null) into.delete(e.slot);
+      else into.set(e.slot, e.to);
       const nodes = new Map(s.nodes);
-      nodes.set(e.from, { ...parent, children });
+      nodes.set(e.from, e.pointer === 'link'
+        ? { ...parent, links: into }
+        : { ...parent, children: into });
       return { ...s, nodes };
     }
     case 'NodeReused': {
@@ -185,12 +201,12 @@ export function fingerprint(s: SceneState): string {
   const nodes = [...s.nodes.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([id, n]) => {
-      const kids = [...n.children.entries()]
+      const pointers = [...n.children.entries(), ...[...n.links.entries()].map(([k, v]) => [`~${k}`, v] as const)]
         .sort((a, b) => (a[0] < b[0] ? -1 : 1))
         .map(([slot, child]) => `${slot}>${child}`)
         .join(',');
       return `${id}=${n.value}${n.label}@${n.slot}#${n.origin}` +
-        `{${kids}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
+        `{${pointers}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;
     });
   const history = s.versions.map((v) => v.join('+')).join(',');
   return `r[${s.roots.join(',')}] h[${history}] ${nodes.join(' ')}`;

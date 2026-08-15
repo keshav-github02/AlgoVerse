@@ -44,6 +44,9 @@ importers:
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-bit
+      '@algoverse/plugin-persistent-bplus':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-bplus
       '@algoverse/plugin-persistent-bst':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-bst
@@ -99,6 +102,15 @@ importers:
         version: link:../../plugin-sdk
 
   packages/plugins/persistent-bit:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/persistent-bplus:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -181,6 +193,9 @@ importers:
       '@algoverse/plugin-persistent-bit':
         specifier: workspace:*
         version: link:../plugins/persistent-bit
+      '@algoverse/plugin-persistent-bplus':
+        specifier: workspace:*
+        version: link:../plugins/persistent-bplus
       '@algoverse/plugin-persistent-bst':
         specifier: workspace:*
         version: link:../plugins/persistent-bst

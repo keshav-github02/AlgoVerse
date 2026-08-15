@@ -371,6 +371,31 @@ one step brought it to zero and cut the same script from 23 nodes to 13.
 Nothing in that is visible from the answers, which were correct throughout. It shows up only as a
 canvas full of debris, which is exactly why the rule lives in the kit rather than in one plugin.
 
+### The first pointer that is not a tree edge
+
+A B+ tree keeps its keys in the leaves and chains the leaves together, so a range query descends
+once and then reads sideways. That chain is the first pointer here that does not mean "one level
+down", and layout had assumed every edge did — following one would have staggered the leaves
+downward and scrambled their order.
+
+`StructureEdge.kind` now distinguishes `child` from `link`. Only `child` decides depth or
+ordering; a `link` is drawn and nothing more. Layout also anchors a same-row edge at the sides
+rather than top-to-bottom, which was meaningless for a horizontal pointer.
+
+The conformance kit then caught the more interesting mistake. The first version *derived* the chain
+inside `getStructure()` and never logged it, so replay produced a picture with five edges where the
+plugin reported eight — precisely the invariant that check exists to protect. **A pointer the
+picture shows and the log does not carry is a pointer replay cannot rebuild.** `PointerSet` gained
+a `pointer` field, `SceneNode` gained a `links` map, and the chain became events like anything
+else.
+
+Fixing it surfaced why the chain was tempting to fake. A leaf shared between two versions can have a
+different successor in each, and **a pointer that differs per version cannot live on a shared node**
+— that is what persistence means. A production B+ tree pays for this by copying the predecessor leaf
+and all its ancestors on every split. This plugin instead maintains the chain destructively while
+the tree stays persistent, and says so: scrubbing moves the chain with you, but two versions' chains
+cannot be seen at once.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets

@@ -12,6 +12,8 @@ import { sceneElements, type Attrs, type RenderOptions, type SceneElement } from
 export const SCENE_STYLES = `
 .av-edge { fill: none; stroke-linecap: round; stroke-width: 1.5; opacity: .55; }
 .av-edge.av-reused { stroke-width: 2.1; stroke-dasharray: 4 3.5; opacity: .95; }
+/* A pointer that is not a tree edge: thinner, dotted, and it runs sideways. */
+.av-edge.av-link { stroke-width: 1.25; stroke-dasharray: 1.5 3; opacity: .75; }
 .av-node rect { stroke-width: 1.25; fill: var(--av-node-bg, #fff); }
 .av-node .av-value { font: 600 16px var(--av-mono, ui-monospace, Consolas, monospace);
   font-variant-numeric: tabular-nums; fill: var(--av-text, #171f27); }

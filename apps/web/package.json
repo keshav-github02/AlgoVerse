@@ -24,6 +24,7 @@
     "@algoverse/plugin-persistent-bst": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",
     "@algoverse/plugin-persistent-btree": "workspace:*",
-    "@algoverse/plugin-persistent-splay": "workspace:*"
+    "@algoverse/plugin-persistent-splay": "workspace:*",
+    "@algoverse/plugin-persistent-bplus": "workspace:*"
   }
 }

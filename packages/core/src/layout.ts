@@ -46,6 +46,7 @@ export interface PositionedEdge {
   readonly to: NodeId;
   readonly slot: string;
   readonly reused: boolean;
+  readonly kind: 'child' | 'link';
   readonly x1: number;
   readonly y1: number;
   readonly x2: number;
@@ -113,6 +114,9 @@ interface Slot {
 function deriveDepths(graph: StructureGraph): ReadonlyMap<NodeId, number> {
   const adj = new Map<NodeId, NodeId[]>();
   for (const e of graph.edges) {
+    // Sideways pointers are not levels; following one would put a leaf's
+    // neighbour a row below it.
+    if (e.kind === 'link') continue;
     const list = adj.get(e.from) ?? [];
     list.push(e.to);
     adj.set(e.from, list);
@@ -206,6 +210,7 @@ function layered(graph: StructureGraph, o: LayoutOptions): PositionedScene {
   for (const e of graph.edges) {
     const from = slotOf.get(e.from);
     const to = slotOf.get(e.to);
+    if (e.kind === 'link') continue;
     if (from === undefined || to === undefined || from === to) continue;
     const list = childRefs.get(from) ?? [];
     if (!list.some((r) => r.slot === to)) list.push({ slot: to, via: e.slot });
@@ -372,12 +377,26 @@ function finish(
     const a = placed.get(e.from);
     const b = placed.get(e.to);
     if (a === undefined || b === undefined) continue;
+    const kind = e.kind ?? 'child';
+    if (Math.abs(a.y - b.y) < 1) {
+      // Same row: leave from one side and arrive at the other.
+      const rightward = b.x >= a.x;
+      edges.push({
+        from: e.from, to: e.to, slot: e.slot, reused: e.reused, kind,
+        x1: a.x + (rightward ? a.width / 2 : -a.width / 2),
+        y1: a.y,
+        x2: b.x + (rightward ? -b.width / 2 : b.width / 2),
+        y2: b.y,
+      });
+      continue;
+    }
     const downward = b.y >= a.y;
     edges.push({
       from: e.from,
       to: e.to,
       slot: e.slot,
       reused: e.reused,
+      kind,
       x1: a.x,
       y1: a.y + (downward ? a.height / 2 : -a.height / 2),
       x2: b.x,

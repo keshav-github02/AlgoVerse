@@ -54,7 +54,7 @@ Four packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, trie, BST, AVL, B-tree, splay, stack |
+| `plugins/*` | One package per algorithm or data structure | segment tree, BIT, treap, trie, BST, AVL, B-tree, B+ tree, splay, stack |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
@@ -91,7 +91,7 @@ algoverse/
 | --- | --- |
 | 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
 | 2 | Persistent BIT, treap, trie and BST - **complete** |
-| 3 | AVL, B-tree and splay **(done)**, red-black, B+ tree |
+| 3 | AVL, B-tree, B+ tree and splay **(done)**, red-black |
 | 4 | Graphs - DFS, BFS, Dijkstra, Prim, Kruskal, SCC, bridges, articulation points |
 | 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
 | 6 | Heavy-light decomposition, Euler tour tree, link-cut tree, merge sort tree, wavelet tree, Li Chao tree |

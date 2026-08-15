@@ -28,6 +28,11 @@ export function sceneToStructure(scene: SceneState, layoutHint: LayoutHint): Str
       slot: n.slot,
       origin: n.origin,
     });
+    for (const [slot, to] of n.links) {
+      const target = scene.nodes.get(to);
+      if (target === undefined) continue;
+      edges.push({ from: id, to, slot, reused: false, kind: 'link' });
+    }
     for (const [slot, to] of n.children) {
       const child = scene.nodes.get(to);
       // A pointer to a deleted node is not drawable. Mid-operation states can

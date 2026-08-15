@@ -79,6 +79,7 @@ export function sceneElements(
         className: [
           'av-edge',
           e.reused ? 'av-reused' : '',
+          e.kind === 'link' ? 'av-link' : '',
           em === undefined ? '' : `av-em-${em}`,
         ].filter((c) => c !== '').join(' '),
         // Colour by the child's origin: a pointer into older memory reads older.

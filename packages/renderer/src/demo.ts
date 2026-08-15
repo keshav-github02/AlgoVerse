@@ -29,6 +29,7 @@ import { persistentBst } from '@algoverse/plugin-persistent-bst';
 import { persistentAvl } from '@algoverse/plugin-persistent-avl';
 import { persistentBtree } from '@algoverse/plugin-persistent-btree';
 import { persistentSplay } from '@algoverse/plugin-persistent-splay';
+import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { stack } from '@algoverse/plugin-stack';
 
 interface Panel {
@@ -125,6 +126,7 @@ const panels: readonly Panel[] = [
   drive(persistentAvl, ['build [1 2 3]', 'insert v2 4', 'insert v3 5'], 'dag'),
   drive(persistentBtree, ['build [1 2 3]', 'insert v0 4', 'insert v1 5'], 'dag'),
   drive(persistentSplay, ['build [1 2 3 4 5]', 'access v0 1', 'access v1 3'], 'dag'),
+  drive(persistentBplus, ['build [1 2 3 4 5 6 7 8]', 'range v0 3 7'], 'dag'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 

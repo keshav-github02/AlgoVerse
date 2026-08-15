@@ -25,9 +25,10 @@ import { persistentBst } from '@algoverse/plugin-persistent-bst';
 import { persistentAvl } from '@algoverse/plugin-persistent-avl';
 import { persistentBtree } from '@algoverse/plugin-persistent-btree';
 import { persistentSplay } from '@algoverse/plugin-persistent-splay';
+import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentBtree, persistentSplay, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentBtree, persistentSplay, persistentBplus, stack];
 
 export interface HistoryEntry {
   readonly line: string;
