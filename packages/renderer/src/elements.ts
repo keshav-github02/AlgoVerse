@@ -30,6 +30,13 @@ export interface RenderOptions {
   readonly highlight?: readonly NodeId[];
   /** Nodes pushed into the background. */
   readonly dim?: readonly NodeId[];
+  /**
+   * Nodes not present at this moment, drawn faded out where they will stand.
+   * Distinct from `dim`: dim is still part of the picture, off is not there
+   * yet or no longer there. Given so that markup drawn over a whole timeline
+   * can open on one step of it without a flash of everything at once.
+   */
+  readonly off?: readonly NodeId[];
   /** Per-node weighting. Absent nodes are drawn normally. */
   readonly emphasis?: ReadonlyMap<NodeId, Emphasis>;
   /** Show the small label under each value. */
@@ -57,6 +64,7 @@ export function sceneElements(
 ): readonly SceneElement[] {
   const highlight = new Set(options.highlight ?? []);
   const dim = new Set(options.dim ?? []);
+  const off = new Set(options.off ?? []);
   const showLabels = options.showLabels ?? true;
   const hue = (origin: number): string => `var(--av-c${origin % PALETTE_SIZE})`;
 
@@ -84,7 +92,9 @@ export function sceneElements(
           e.reused ? 'av-reused' : '',
           e.kind === 'link' ? 'av-link' : '',
           em === undefined ? '' : `av-em-${em}`,
+          off.has(e.from) || off.has(e.to) ? 'av-off' : '',
         ].filter((c) => c !== '').join(' '),
+        'data-edge': `${e.from}:${e.slot}`,
         // Colour by the child's origin: a pointer into older memory reads older.
         stroke: hue(originOf.get(e.to) ?? 0),
         d,
@@ -113,7 +123,8 @@ export function sceneElements(
     arrows.push({
       tag: 'path',
       attrs: {
-        className: 'av-arrow',
+        className: off.has(e.from) || off.has(e.to) ? 'av-arrow av-off' : 'av-arrow',
+        'data-edge': `${e.from}:${e.slot}`,
         fill: hue(originOf.get(e.to) ?? 0),
         d: `M${n2(e.x2)},${n2(e.y2)} L${n2(bx - uy * wing)},${n2(by + ux * wing)} ` +
            `L${n2(bx + uy * wing)},${n2(by - ux * wing)} Z`,
@@ -127,7 +138,8 @@ export function sceneElements(
     weights.push({
       tag: 'text',
       attrs: {
-        className: 'av-weight',
+        className: off.has(e.from) || off.has(e.to) ? 'av-weight av-off' : 'av-weight',
+        'data-edge': `${e.from}:${e.slot}`,
         x: n2((e.x1 + e.x2) / 2),
         y: n2((e.y1 + e.y2) / 2),
         textAnchor: 'middle',
@@ -145,6 +157,7 @@ export function sceneElements(
     const classes = ['av-node'];
     if (highlight.has(node.id)) classes.push('av-highlight');
     if (dim.has(node.id)) classes.push('av-dim');
+    if (off.has(node.id)) classes.push('av-off');
     const em = emphasis?.get(node.id);
     if (em !== undefined) classes.push(`av-em-${em}`);
 
@@ -170,7 +183,7 @@ export function sceneElements(
         text: node.label,
       });
     }
-    if (highlight.has(node.id)) {
+    {
       children.push({
         tag: 'path',
         attrs: {

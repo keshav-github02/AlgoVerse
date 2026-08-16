@@ -19,6 +19,20 @@ export const SCENE_STYLES = `
   font-variant-numeric: tabular-nums; fill: var(--av-text, #171f27); }
 .av-node .av-label { font: 9.5px var(--av-mono, ui-monospace, Consolas, monospace);
   fill: var(--av-faint, #8695a3); }
+/* Membership, as motion: an element that is not in the current step fades out
+   where it stands rather than vanishing. Positions never change - layout is
+   computed once over every node that ever exists - so appearing and leaving is
+   the whole of what there is to animate. */
+.av-node, .av-edge, .av-arrow, .av-weight {
+  transition: opacity .15s ease, transform .15s ease;
+}
+.av-off { opacity: 0; pointer-events: none; }
+.av-node.av-off { transform: scale(.86); transform-origin: center; transform-box: fill-box; }
+.av-tick { opacity: 0; transition: opacity .15s ease; }
+.av-node.av-highlight .av-tick { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .av-node, .av-edge, .av-arrow, .av-weight, .av-tick { transition: none; }
+}
 .av-arrows .av-arrow { stroke: none; opacity: .85; }
 .av-weights .av-weight { font: 600 10.5px var(--av-mono, ui-monospace, Consolas, monospace);
   fill: var(--av-text, #171f27); paint-order: stroke;

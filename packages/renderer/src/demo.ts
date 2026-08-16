@@ -18,7 +18,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   Playback, Timeline, createRng, describeEvent, layout, parseCommand, sceneToStructure,
-  type LayoutHint, type NodeId, type ParsedCommand, type PositionedScene, type SimEvent,
+  type LayoutHint, type NodeId, type ParsedCommand, type SimEvent,
+  type StructureEdge, type StructureNode,
 } from '@algoverse/core';
 import { SCENE_STYLES, escapeXml, renderScene } from './svg.ts';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
@@ -35,11 +36,23 @@ import { graph } from '@algoverse/plugin-graph';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 
+/**
+ * One step is not a picture, it is a membership: which nodes and edges are
+ * there, and which have been visited. The picture is drawn once.
+ */
+interface Step {
+  readonly nodes: readonly number[];
+  readonly edges: readonly string[];
+  readonly visits: readonly number[];
+  readonly note: string;
+}
+
 interface Panel {
   readonly heading: string;
   readonly caption: string;
   readonly session: readonly { readonly line: string; readonly out: string }[];
-  readonly frames: readonly { readonly svg: string; readonly note: string }[];
+  readonly svg: string;
+  readonly steps: readonly Step[];
   readonly marks: readonly { readonly index: number; readonly label: string }[];
 }
 
@@ -67,17 +80,47 @@ function drive(
     all.push(...r.events);
   }
 
-  /**
-   * Layout is computed once, over every node that ever exists, and reused for
-   * every frame. Laying out each frame independently would make surviving
-   * nodes jump sideways whenever a neighbour appeared, which reads as chaos
-   * rather than as an algorithm running.
-   */
-  const union = new Timeline();
-  union.append(all.filter((e) => e.kind !== 'NodeDeleted'));
-  const stable = layout(sceneToStructure(union.stateAt(union.length), hint));
-
   const playback = new Playback(timeline);
+  const keyOf = (e: { readonly from: NodeId; readonly slot: string }): string => `${e.from}:${e.slot}`;
+
+  /**
+   * Layout is computed once, over everything that exists at any step, and
+   * reused for every one of them. Laying out each step independently would
+   * make surviving nodes jump sideways whenever a neighbour appeared, which
+   * reads as chaos rather than as an algorithm running.
+   *
+   * The union is walked, not taken from the final state. A pointer that is
+   * cleared on the way - the stack clears the popped node's `below` before it
+   * goes - is absent at the end, so the end is not a superset of the middle.
+   */
+  const unionNodes = new Map<NodeId, StructureNode>();
+  const unionEdges = new Map<string, StructureEdge>();
+  const unionRoots = new Set<NodeId>();
+  const retargeted = new Set<string>();
+  for (let step = 0; step <= timeline.length; step += 1) {
+    playback.seek(step);
+    const live = sceneToStructure(playback.scene(), hint);
+    for (const n of live.nodes) if (!unionNodes.has(n.id)) unionNodes.set(n.id, n);
+    for (const r of live.roots) unionRoots.add(r);
+    for (const e of live.edges) {
+      const seen = unionEdges.get(keyOf(e));
+      // One slot pointing at two different nodes over time would need two
+      // elements to draw, not one. Nothing does it yet; say so if it starts.
+      if (seen !== undefined && seen.to !== e.to) retargeted.add(keyOf(e));
+      unionEdges.set(keyOf(e), e);
+    }
+  }
+  if (retargeted.size > 0) {
+    console.log(`  WARN ${plugin.meta.name}: ${retargeted.size} slots are retargeted, so one ` +
+      `element has to stand for two edges`);
+  }
+
+  const stable = layout({
+    layout: hint,
+    nodes: [...unionNodes.values()],
+    edges: [...unionEdges.values()],
+    roots: [...unionRoots],
+  });
 
   /** The plugin's own words where it has them, the generic ones where it does not. */
   const explainAt = (step: number): string => {
@@ -89,23 +132,45 @@ function drive(
       ?? describeEvent(event);
   };
 
-  const frames: { svg: string; note: string }[] = [];
+  /*
+   * Every element is drawn once, over the whole timeline, and each step says
+   * which of them are present. Emitting a separate picture per step and
+   * swapping them is a flipbook: nothing can move, because the element that
+   * leaves and the element that arrives are different elements. Given one
+   * element with a lasting identity, appearing and leaving become a class
+   * toggle, and CSS does the rest.
+   */
+  const drawable = new Set(stable.edges.map(keyOf));
+
+  const steps: Step[] = [];
+  const undrawable = new Set<string>();
   for (let step = 0; step <= timeline.length; step += 1) {
     playback.seek(step);
     const live = sceneToStructure(playback.scene(), hint);
     const present = new Set<NodeId>(live.nodes.map((n) => n.id));
-    const scene: PositionedScene = {
-      nodes: stable.nodes.filter((n) => present.has(n.node.id)),
-      edges: stable.edges.filter((e) => present.has(e.from) && present.has(e.to)),
-      width: stable.width,
-      height: stable.height,
-    };
-    const visited = [...playback.scene().visits.keys()].filter((id) => present.has(id));
-    frames.push({
-      svg: renderScene(scene, { title: `${plugin.meta.name} at step ${step}`, highlight: visited }),
+    const keys = live.edges.map(keyOf);
+    // An edge the union never knew about could never be drawn, at any step.
+    for (const k of keys) if (!drawable.has(k)) undrawable.add(k);
+    steps.push({
+      nodes: [...present],
+      edges: keys.filter((k) => drawable.has(k)),
+      visits: [...playback.scene().visits.keys()].filter((id) => present.has(id)),
       note: `${String(step).padStart(2, '0')}/${timeline.length}  ${explainAt(step)}`,
     });
   }
+  if (undrawable.size > 0) {
+    console.log(`  WARN ${plugin.meta.name}: ${undrawable.size} edges exist at some step but are ` +
+      `not in the union layout, so they can never be drawn`);
+  }
+
+  const opening = steps[steps.length - 1] as Step;
+  const shown = new Set<number>(opening.nodes);
+  const svg = renderScene(stable, {
+    title: `${plugin.meta.name}, every node the run ever allocates`,
+    highlight: opening.visits as readonly NodeId[],
+    // The page opens on the last step, so anything gone by then starts faded.
+    off: stable.nodes.map((n) => n.node.id).filter((id) => !shown.has(id)),
+  });
 
   const final = sceneToStructure(playback.scene(), hint);
   return {
@@ -114,7 +179,8 @@ function drive(
       `${final.edges.filter((e) => e.reused).length} pointers into reused memory · ` +
       `layout "${hint}" · ${Math.round(stable.width)}x${Math.round(stable.height)}px`,
     session,
-    frames,
+    svg,
+    steps,
     marks: timeline.marks.map((m) => ({ index: m.index, label: m.label })),
   };
 }
@@ -149,12 +215,11 @@ const panelHtml = panels.map((p, i) => `  <section data-panel="${i}">
       <button data-act="next" aria-label="Next step">&rsaquo;</button>
       <button data-act="nextMark" aria-label="Next operation">&raquo;</button>
       <button data-act="last" aria-label="Last step">&gt;|</button>
-      <input type="range" min="0" max="${p.frames.length - 1}" value="${p.frames.length - 1}"
+      <input type="range" min="0" max="${p.steps.length - 1}" value="${p.steps.length - 1}"
              aria-label="Step" />
       <span class="note"></span>
     </div>
-    <div class="stage">${p.frames.map((f, s) =>
-      `<div class="frame" data-step="${s}"${s === p.frames.length - 1 ? '' : ' hidden'}>${f.svg}</div>`).join('')}</div>
+    <div class="stage">${p.svg}</div>
   </section>`).join('\n');
 
 const page = `<!doctype html>
@@ -212,22 +277,37 @@ ${SCENE_STYLES}
 ${panelHtml}
 </main>
 <script>
-const NOTES = ${JSON.stringify(panels.map((p) => p.frames.map((f) => f.note)))};
+const NOTES = ${JSON.stringify(panels.map((p) => p.steps.map((f) => f.note)))};
+const STEPS = ${JSON.stringify(panels.map((p) => p.steps.map((f) => [f.nodes, f.edges, f.visits])))};
 const MARKS = ${JSON.stringify(panels.map((p) => p.marks.map((m) => m.index)))};
-const RATE = 1000 / 12;
+/* Slower than the old flipbook on purpose: a step that lasts less time than the
+   150ms transition cuts its own motion short, and the page reads as a stutter. */
+const RATE = 200;
 document.querySelectorAll('section[data-panel]').forEach((section) => {
   const i = Number(section.dataset.panel);
   const range = section.querySelector('input[type=range]');
   const note = section.querySelector('.note');
   const playBtn = section.querySelector('[data-act=play]');
-  const frames = [...section.querySelectorAll('.frame')];
-  const last = frames.length - 1;
+  const nodeEls = [...section.querySelectorAll('[data-node]')];
+  const edgeEls = [...section.querySelectorAll('[data-edge]')];
+  const last = STEPS[i].length - 1;
   let timer = null;
 
   const show = (step) => {
     const s = Math.max(0, Math.min(step, last));
     range.value = String(s);
-    frames.forEach((f, k) => { f.hidden = k !== s; });
+    // Membership in, classes out. Every element keeps its identity across the
+    // whole timeline, so the browser has something to transition between.
+    const [nodes, edges, visits] = STEPS[i][s];
+    const on = new Set(nodes);
+    const drawn = new Set(edges);
+    const seen = new Set(visits);
+    for (const el of nodeEls) {
+      const id = Number(el.dataset.node);
+      el.classList.toggle('av-off', !on.has(id));
+      el.classList.toggle('av-highlight', seen.has(id));
+    }
+    for (const el of edgeEls) el.classList.toggle('av-off', !drawn.has(el.dataset.edge));
     note.textContent = NOTES[i][s];
   };
   const stop = () => { clearInterval(timer); timer = null; playBtn.textContent = 'play'; };
@@ -266,4 +346,4 @@ const out = resolve(here, '../../../demo/index.html');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, page, 'utf8');
 console.log(`wrote ${out}`);
-for (const p of panels) console.log(`  ${p.heading}: ${p.frames.length} frames · ${p.caption}`);
+for (const p of panels) console.log(`  ${p.heading}: ${p.steps.length} steps · ${p.caption}`);

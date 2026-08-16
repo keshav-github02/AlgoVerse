@@ -5,7 +5,7 @@
  */
 
 import { layout, type NodeId, type StructureEdge, type StructureGraph, type StructureNode } from '@algoverse/core';
-import { escapeXml, renderScene } from './svg.ts';
+import { SCENE_STYLES, escapeXml, renderScene } from './svg.ts';
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = ''): void => {
@@ -89,6 +89,53 @@ check('reused edges are marked', svg.includes('av-edge av-reused'),
   `${(svg.match(/av-reused/g) ?? []).length} reused`);
 check('origin drives the palette slot, not the value',
   svg.includes('var(--av-c0)') && svg.includes('var(--av-c1)') && svg.includes('var(--av-c2)'));
+
+/* ── Identity, so a consumer can animate ───────────────────────────── */
+
+console.log('\nstable identity');
+
+/*
+ * Everything an animation has to toggle needs a name that outlives the frame
+ * it appears in. Swapping a freshly drawn picture per step cannot animate:
+ * the element that leaves and the element that arrives are different elements,
+ * so the browser has nothing to transition between.
+ */
+check('every node carries its id', (() => {
+  const ids = [...svg.matchAll(/data-node="(\d+)"/g)].map((m) => m[1]);
+  return ids.length === scene.nodes.length && new Set(ids).size === ids.length;
+})(), `${scene.nodes.length} nodes, all distinct`);
+
+check('every edge carries a key, and the key is its pointer', (() => {
+  const keys = [...svg.matchAll(/class="av-edge[^"]*" data-edge="([^"]+)"/g)].map((m) => m[1]);
+  const want = scene.edges.map((e) => `${e.from}:${e.slot}`);
+  return keys.length === want.length && keys.every((k, i) => k === want[i]);
+})(), `${scene.edges.length} edges`);
+
+check('the corner tick is always drawn, so highlight is only a class', (() => {
+  // Emitting it only when highlighted meant highlighting required re-rendering
+  // the scene. As a class it is a toggle, which is what a pointer needs too.
+  const plain = (renderScene(scene).match(/av-tick/g) ?? []).length;
+  const lit = (renderScene(scene, { highlight: [0 as NodeId] }).match(/av-tick/g) ?? []).length;
+  return plain === scene.nodes.length && lit === plain;
+})());
+
+check('off fades a node and everything attached to it', (() => {
+  const faded = renderScene(scene, { off: [1 as NodeId] });
+  const touching = scene.edges.filter((e) => e.from === 1 || e.to === 1).length;
+  const nodesOff = (faded.match(/class="av-node av-off"/g) ?? []).length;
+  const edgesOff = (faded.match(/class="av-edge[^"]*av-off"/g) ?? []).length;
+  return nodesOff === 1 && edgesOff === touching && touching > 0;
+})());
+
+check('off is not dim: they are different classes', (() => {
+  const a = renderScene(scene, { off: [0 as NodeId] });
+  const b = renderScene(scene, { dim: [0 as NodeId] });
+  return a.includes('av-off') && !a.includes('av-dim')
+    && b.includes('av-dim') && !b.includes('av-off');
+})(), 'dim is still part of the picture; off is not there');
+
+check('motion is dropped when the reader asks for it',
+  SCENE_STYLES.includes('prefers-reduced-motion'));
 
 /* ── The renderer knows nothing about algorithms ───────────────────── */
 
