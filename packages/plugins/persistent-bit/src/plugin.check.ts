@@ -174,6 +174,179 @@ for (let t = 0; t < 25 && firstFailure === ''; t += 1) {
 check('every version answers every prefix correctly', firstFailure === '',
   firstFailure === '' ? `${trials} trials, ${queries} queries` : firstFailure);
 
+/* ── Ranges and the descent ────────────────────────────────────────── */
+
+console.log('\nranges and descent');
+
+check('a range is the difference of two prefixes', (() => {
+  const q = fresh();
+  run(q, 'build [3 1 4 1 5 9 2 6]');
+  const all = run(q, 'range v0 1 8').value as { sum: number };
+  const middle = run(q, 'range v0 3 5').value as { sum: number };
+  const one = run(q, 'range v0 4 4').value as { sum: number };
+  return all.sum === 31 && middle.sum === 10 && one.sum === 1;
+})(), 'both ends included');
+
+check('a range agrees with the two prefixes it is made of', (() => {
+  const q = fresh();
+  run(q, 'build [3 1 4 1 5 9 2 6]');
+  const upper = (run(q, 'prefix v0 6').value as { sum: number }).sum;
+  const lower = (run(q, 'prefix v0 2').value as { sum: number }).sum;
+  const direct = (run(q, 'range v0 3 6').value as { sum: number }).sum;
+  return direct === upper - lower;
+})());
+
+check('a backwards or out-of-bounds range is refused', (() => {
+  const q = fresh();
+  run(q, 'build [1 2 3]');
+  return run(q, 'range v0 3 2').error?.code === 'INVALID_RANGE'
+    && run(q, 'range v0 0 2').error?.code === 'INVALID_RANGE'
+    && run(q, 'range v0 1 9').error?.code === 'INVALID_RANGE';
+})(), 'the structure is 1-indexed, so 0 is out');
+
+check('kth finds where the running total first reaches k', (() => {
+  const q = fresh();
+  run(q, 'build [2 0 3 1]');
+  // running totals: 2, 2, 5, 6
+  const first = (run(q, 'kth v0 1').value as { index: number }).index;
+  const edge = (run(q, 'kth v0 2').value as { index: number }).index;
+  const third = (run(q, 'kth v0 3').value as { index: number }).index;
+  const last = (run(q, 'kth v0 6').value as { index: number }).index;
+  return first === 1 && edge === 1 && third === 3 && last === 4;
+})(), 'k = 2 stops at index 1, because index 2 adds nothing');
+
+check('kth refuses rather than guessing when an entry is negative', (() => {
+  const q = fresh();
+  run(q, 'build [3 -1 4]');
+  const r = run(q, 'kth v0 2');
+  return r.error?.code === 'PRECONDITION_FAILED' && r.error.message.includes('negative');
+})());
+
+check('the negative count follows writes, in both directions', (() => {
+  // It is maintained rather than recomputed, so it has to be right after a
+  // value goes negative and again after it comes back.
+  const q = fresh();
+  run(q, 'build [5 5 5]');
+  const clean = run(q, 'kth v0 6').error === null;
+  run(q, 'add v0 2 -20');
+  const dirty = run(q, 'kth v1 6').error?.code === 'PRECONDITION_FAILED';
+  run(q, 'add v1 2 20');
+  const cleanAgain = run(q, 'kth v2 6').error === null;
+  return clean && dirty && cleanAgain;
+})(), 'refuses once an entry goes below zero, and answers again once it does not');
+
+check('kth refuses a k the array never reaches', (() => {
+  const q = fresh();
+  run(q, 'build [1 2 3]');
+  return run(q, 'kth v0 7').error?.code === 'PRECONDITION_FAILED'
+    && run(q, 'kth v0 0').error?.code === 'BAD_ARGUMENT';
+})());
+
+check('kth descends once instead of scanning', (() => {
+  const q = fresh();
+  run(q, `build [${Array.from({ length: 256 }, () => 1).join(' ')}]`);
+  const r = run(q, 'kth v0 200').value as { index: number; visits: number };
+  return r.index === 200 && r.visits <= 9;
+})(), (() => {
+  const q = fresh();
+  run(q, `build [${Array.from({ length: 256 }, () => 1).join(' ')}]`);
+  const r = run(q, 'kth v0 200').value as { visits: number };
+  return `${r.visits} cells visited for 256 entries`;
+})());
+
+check('older versions keep their own answers', (() => {
+  const q = fresh();
+  run(q, 'build [1 1 1 1]');
+  run(q, 'add v0 1 10');
+  const older = (run(q, 'kth v0 3').value as { index: number }).index;
+  const newer = (run(q, 'kth v1 3').value as { index: number }).index;
+  return older === 3 && newer === 1;
+})(), 'v0 needs three entries to reach 3; v1 gets there at the first');
+
+/* ── Property test: ranges and descent vs a plain array ────────────── */
+
+console.log('\nproperty test vs a plain array');
+
+{
+  const rng2 = createRng(20_260_822);
+  let trials2 = 0;
+  let queries2 = 0;
+  let failure = '';
+
+  for (let t = 0; t < 40 && failure === ''; t += 1) {
+    const n = rng2.nextInt(1, 15);
+    // Non-negative to start, so kth applies; some trials then break that.
+    const start = Array.from({ length: n }, () => rng2.nextInt(0, 12));
+    const q = fresh();
+    run(q, `build [${start.join(' ')}]`);
+    const model: number[][] = [[...start]];
+
+    for (let op = 0; op < 6; op += 1) {
+      const v = rng2.nextInt(0, model.length);
+      const i = rng2.nextInt(1, n + 1);
+      const delta = rng2.nextInt(-6, 12);
+      const r = run(q, `add v${v} ${i} ${delta}`);
+      if (r.error !== null) { failure = `add failed: ${r.error.code}`; break; }
+      const next = [...(model[v] as number[])];
+      next[i - 1] = (next[i - 1] as number) + delta;
+      model.push(next);
+    }
+
+    for (let v = 0; v < model.length && failure === ''; v += 1) {
+      const arr = model[v] as number[];
+
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        let lo = rng2.nextInt(1, n + 1);
+        let hi = rng2.nextInt(1, n + 1);
+        if (lo > hi) [lo, hi] = [hi, lo];
+        const expected = arr.slice(lo - 1, hi).reduce((a, b) => a + b, 0);
+        const r = run(q, `range v${v} ${lo} ${hi}`);
+        queries2 += 1;
+        const got = (r.value as { sum: number } | null)?.sum;
+        if (r.error !== null || got !== expected) {
+          failure = `range v${v} ${lo} ${hi} gave ${r.error?.code ?? String(got)}, expected ${expected}`;
+          break;
+        }
+      }
+      if (failure !== '') break;
+
+      /*
+       * kth must answer exactly when every entry is non-negative, and must
+       * refuse otherwise - a wrong index would be worse than no index.
+       */
+      const total = arr.reduce((a, b) => a + b, 0);
+      const clean = arr.every((x) => x >= 0);
+      if (total > 0) {
+        const k = rng2.nextInt(1, total + 1);
+        const r = run(q, `kth v${v} ${k}`);
+        queries2 += 1;
+        if (!clean) {
+          if (r.error?.code !== 'PRECONDITION_FAILED') {
+            failure = `kth v${v} ${k} answered over a negative entry`;
+            break;
+          }
+        } else {
+          let running = 0;
+          let expected = -1;
+          for (let i = 0; i < n; i += 1) {
+            running += arr[i] as number;
+            if (running >= k) { expected = i + 1; break; }
+          }
+          const got = (r.value as { index: number } | null)?.index;
+          if (r.error !== null || got !== expected) {
+            failure = `kth v${v} ${k} gave ${r.error?.code ?? String(got)}, expected ${expected}`;
+            break;
+          }
+        }
+      }
+    }
+    trials2 += 1;
+  }
+
+  check('ranges and descents agree with a plain array, every version',
+    failure === '',
+    failure === '' ? `${trials2} trials, ${queries2} queries` : failure);
+}
 /* ── 6. Console session ────────────────────────────────────────────── */
 
 console.log('\nconsole session:\n');

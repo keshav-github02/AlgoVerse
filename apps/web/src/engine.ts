@@ -19,6 +19,7 @@ import {
 } from '@algoverse/plugin-sdk';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
 import { persistentBit } from '@algoverse/plugin-persistent-bit';
+import { fenwickRange } from '@algoverse/plugin-fenwick-range';
 import { persistentTreap } from '@algoverse/plugin-persistent-treap';
 import { persistentTrie } from '@algoverse/plugin-persistent-trie';
 import { persistentBst } from '@algoverse/plugin-persistent-bst';
@@ -35,7 +36,7 @@ import { liChao } from '@algoverse/plugin-li-chao';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, liChao, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, stack];
 
 export interface HistoryEntry {
   readonly line: string;

@@ -61,6 +61,16 @@ export const explainBit: Explainer = (event: SimEvent, ctx: ExplainContext): str
         return `Cell ${i} covers the index being written, so the old value is read before ` +
           `the copy is made.`;
       }
+      if (command === 'kth') {
+        return `Cell ${i} holds the sum of ${covers(i)}, a block ${lowbit(i)} wide. The descent ` +
+          `tries the widest blocks first and takes each one it can still afford - which is the ` +
+          `operation this shape gives away, and a plain array of prefix sums cannot do at all.`;
+      }
+      if (command === 'range') {
+        return `Cell ${i} is on one of the two prefix walks. A Fenwick tree only knows prefixes, ` +
+          `so a range is one subtracted from the other - and that subtraction is why this shape ` +
+          `can total a range but cannot find its smallest value.`;
+      }
       const k = argOf(ctx, 'k');
       return k === null
         ? `Reading cell ${i}.`

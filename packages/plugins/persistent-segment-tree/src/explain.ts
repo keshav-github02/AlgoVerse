@@ -47,6 +47,17 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
           : `Internal node for ${span(r)} stores ${event.value}, the sum of its two children - ` +
             `so any query covering the whole range can stop here.`;
       }
+      if (command === 'apply') {
+        const delta = argOf(ctx, 'delta', 'int');
+        if (event.role === 'tagged') {
+          return `${span(r)} is entirely inside the range being changed, so it takes a tag of ` +
+            `${delta ?? 'the delta'} and keeps both children exactly as they were. Nothing below ` +
+            `this node is touched or copied - which is the whole reason a range update costs a ` +
+            `path rather than a range.`;
+        }
+        return `${span(r)} straddles the edge of the range, so it cannot take a tag. It is ` +
+          `rebuilt from its two children, with its own tag left where it already was.`;
+      }
       const idx = argOf(ctx, 'index', 'int');
       const from = argOf(ctx, 'version', 'version');
       const because = idx === null
@@ -64,6 +75,16 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
       const under = range(ctx.after, event.by);
       const what = r === null ? 'this subtree' : span(r);
       const parent = under === null ? 'the new node' : `the copy of ${span(under)}`;
+      if (command === 'apply') {
+        /*
+         * Not "untouched": under a tag the values below really do change. What
+         * does not happen is the copying, and saying otherwise would teach the
+         * opposite of how a lazy tag works.
+         */
+        return `${what} keeps its old node even though its values have changed. The tag on ` +
+          `${parent} applies to everything beneath it, so the change is recorded once at the ` +
+          `top instead of being written into every node below.`;
+      }
       return `${what} is untouched by this write, so ${parent} points straight at the ` +
         `existing node instead of copying it. This is where the memory saving comes from.`;
     }
@@ -74,6 +95,20 @@ export const explainSegmentTree: Explainer = (event: SimEvent, ctx: ExplainConte
 
       if (command === 'compare') {
         return `${where} is reachable from both versions - the same node, not a copy.`;
+      }
+      if (command === 'apply') {
+        return `Passing through ${where} on the way to the nodes that cover the range. ` +
+          `The tags met here are not pushed down: a persistent structure cannot rewrite what ` +
+          `its earlier versions are still reading.`;
+      }
+      if (command === 'kth') {
+        return `At ${where}, the descent compares what is left of k against the left child's ` +
+          `total. One of the two halves must contain the answer, so it never comes back up.`;
+      }
+      if (command === 'min' || command === 'max') {
+        return `${where} contributes to the ${command}. A tag on the way down shifts every ` +
+          `value below it by the same amount, so it moves the ${command} without changing ` +
+          `which value wins.`;
       }
       if (command === 'update') {
         const idx = argOf(ctx, 'index', 'int');

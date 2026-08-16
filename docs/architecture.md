@@ -420,35 +420,101 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
-### Li Chao: one fact about straight lines
+### Order statistics, three ways
 
-A segment tree over x that holds *lines* rather than numbers, and answers which
-of them is lowest at a given x. Everything it does follows from one fact: two
-straight lines cross at most once. So over any interval, knowing which is
-better at the midpoint tells you which half the loser could still be winning
-in - and there is only ever one half to look in, so an insert is a path.
+`kth` - the k-th smallest thing - is the same question asked of three
+structures, and each answers it with what it already had lying around.
 
-It allocates nothing until a line arrives. There is no shape to build in
-advance, only a range to build it over, which makes it the first structure here
-whose version 0 is genuinely empty.
+- **Segment tree**: descend, comparing k against the left child's total.
+- **Fenwick tree**: take the widest block you can still afford. Nine cells for
+  256 entries.
+- **Balanced tree**: neither AVL nor red-black could do it at all. A search
+  tree puts keys in order but cannot say *how far along* one is, so both gained
+  a subtree count - kept in the same breath as the AVL's height, and for the
+  same reason: a fact about a subtree that costs a walk to recompute and
+  nothing to carry.
 
-Persistence came free and is worth having: the interesting question about a set
-of lines is usually how the lower envelope *changed* when one more was added,
-and `compare` answers exactly that.
+The check that matters for the trees is `the counts survive rebalancing`.
+Nothing else reads the count, so a rotation that rebuilt a node without
+recomputing it would be silently wrong ever after. Sixty-four sorted keys -
+the input that rotates on nearly every insert - and every position verified.
 
-**The test data was the weak part, not the structure.** The first benchmark
-inserted twelve arbitrary lines and a query over a span of 1024 visited *one
-node* - most of the tree did not exist, so the walk stopped immediately and the
-measurement was a constant. Lines tangent to a parabola fix it: for
-`y = -2a·x + a²` the line for a is the lowest at x = a and nowhere else, so
-every x has its own winner and the losers fill the tree to the leaves. Visits
-then come out at exactly log2 of the span - 4, 6 and 8 for spans of 16, 64 and
-256 - and the declared bound measures **R² 1.0000**. Sharing between successive
-versions comes out at 96%.
+`rank` came with it and is the inverse: how many keys come before a value,
+whether or not that value is there. That last part is what makes it answer
+"where would this go" as well as "where is it", and the two together are
+checked against each other as well as against a sorted array.
 
-The same weakness had hidden in two checks, which asserted "few nodes" and "at
-least one shared node" and would have passed on a tree that was barely there.
-They now assert the depth exactly.
+### One Fenwick array cannot do both
+
+The Fenwick tree answers a range and writes one index. Writing a *range* and
+answering a prefix needs a different arrangement of the same idea - store the
+array's differences, so a range add is two writes - and reading a sum back out
+of differences needs a second array to undo the offsets.
+
+That is a different structure, not another command, so it is a different
+plugin. Folding it into the existing one would have cost `kth`, which descends
+by taking the widest block it can afford: with two arrays a cell holds part of
+a difference rather than the sum of a block, so there is no block to take and
+finding a position drops to a binary search at O(log² n). It would also have
+made every point write copy four chains instead of one. The contrast is the
+lesson, and it is easier to see with both on the page.
+
+The new plugin found the stranding bug this repository has now hit four times.
+A range write touches two chains of the same array, and where they meet the
+second walk was replacing the cell the first had just allocated - leaving it
+allocated, pointed at by nothing, and part of no version. The chains are merged
+before anything is allocated. An index whose two deltas *cancel* is still
+copied: its value is unchanged but its children are not, and one cell cannot
+hold the pointers of two versions at once.
+
+### Lazy tags that are never pushed down
+
+A range update marks the O(log n) nodes covering the range and leaves
+everything below them alone. The textbook then *pushes* that tag down on the
+next visit - and that is precisely what a persistent structure cannot do,
+because the nodes below are shared with every earlier version and pushing
+would rewrite their past.
+
+So nothing is ever pushed. A tag stays where it lands and a query adds up the
+tags it passes on the way down. The two ideas fit together better than they do
+in the mutable case: not pushing is what makes a range update O(log n)
+*allocations* rather than O(log n) now and an unbounded rewrite later. Measured
+on 256 entries: covering 200 indices costs **19 nodes**, covering 2 costs 8.
+
+The consequence worth knowing is that a node's number is no longer its range's
+total - it is the total of everything at or below it, with the tags above it
+still to be added. That is what the tree stores, so that is what is drawn, and
+a node carrying a tag says so in its label.
+
+Two things fell out of it:
+
+- A point write under a tag must store `value - carried`, so that adding the
+  tags back gives what was written. Getting that sign wrong is invisible until
+  a range update and a point write meet on the same index, which is now a
+  check of its own.
+- `kth` descends by comparing against the left child, which needs every value
+  to be non-negative. The range minimum added alongside `min` sits on the
+  root, so the precondition costs nothing - the plugin refuses with the reason
+  rather than returning a plausible wrong index.
+
+The explainer went wrong in the way it has before: it described a reused node
+under a tag as *untouched by this write*. It is not untouched - its values
+change by the tag - it is merely not copied, and the old wording taught the
+opposite of how a tag works. There is now a check on the wording itself.
+
+### What the BIT deliberately does not do
+
+The Fenwick tree gained `range` and `kth` and **not** range update. One
+Fenwick array serves range updates with point reads, or point updates with
+range reads, never both; doing both needs a second array alongside it, which
+would also cost `kth` - the descent works because a prefix is a walk down the
+parent chain, and with two arrays a prefix stops being one. Range updates
+against range reads belong on the segment tree, where a tag can sit and wait.
+
+`kth` is the operation the Fenwick shape gives away for free: each cell holds
+a block whose width is a power of two, so the descent tries the widest blocks
+first and takes each it can afford - **9 cells for 256 entries**. A plain array
+of prefix sums cannot do it at all.
 
 ### Euler tour: the encoding decided the algorithm
 
