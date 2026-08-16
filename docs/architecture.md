@@ -420,6 +420,36 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Li Chao: one fact about straight lines
+
+A segment tree over x that holds *lines* rather than numbers, and answers which
+of them is lowest at a given x. Everything it does follows from one fact: two
+straight lines cross at most once. So over any interval, knowing which is
+better at the midpoint tells you which half the loser could still be winning
+in - and there is only ever one half to look in, so an insert is a path.
+
+It allocates nothing until a line arrives. There is no shape to build in
+advance, only a range to build it over, which makes it the first structure here
+whose version 0 is genuinely empty.
+
+Persistence came free and is worth having: the interesting question about a set
+of lines is usually how the lower envelope *changed* when one more was added,
+and `compare` answers exactly that.
+
+**The test data was the weak part, not the structure.** The first benchmark
+inserted twelve arbitrary lines and a query over a span of 1024 visited *one
+node* - most of the tree did not exist, so the walk stopped immediately and the
+measurement was a constant. Lines tangent to a parabola fix it: for
+`y = -2a·x + a²` the line for a is the lowest at x = a and nowhere else, so
+every x has its own winner and the losers fill the tree to the leaves. Visits
+then come out at exactly log2 of the span - 4, 6 and 8 for spans of 16, 64 and
+256 - and the declared bound measures **R² 1.0000**. Sharing between successive
+versions comes out at 96%.
+
+The same weakness had hidden in two checks, which asserted "few nodes" and "at
+least one shared node" and would have passed on a tree that was barely there.
+They now assert the depth exactly.
+
 ### Euler tour: the encoding decided the algorithm
 
 Heavy-light flattens a tree so a *path* is a few ranges, and cannot survive the
