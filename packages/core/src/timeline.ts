@@ -42,6 +42,8 @@ export type SimEvent =
        * shows and the log does not carry is a pointer replay cannot rebuild.
        */
       readonly pointer?: 'child' | 'link';
+      /** What the edge is worth, where that means something. */
+      readonly weight?: number;
     }
   | { readonly kind: 'NodeReused'; readonly node: NodeId; readonly by: NodeId }
   | { readonly kind: 'NodeVisited'; readonly node: NodeId }
@@ -55,6 +57,12 @@ export type SimEvent =
    */
   | { readonly kind: 'VersionCommitted'; readonly version: number; readonly roots: readonly NodeId[] };
 
+export interface ScenePointer {
+  readonly to: NodeId;
+  readonly kind: 'child' | 'link';
+  readonly weight?: number;
+}
+
 export interface SceneNode {
   readonly value: number;
   readonly values?: readonly number[];
@@ -63,10 +71,14 @@ export interface SceneNode {
   readonly depth?: number;
   readonly slot: string;
   readonly origin: number;
-  /** Keyed by slot name, so a node may have two children or twenty. */
-  readonly children: ReadonlyMap<string, NodeId>;
-  /** Pointers that are not hierarchy: a leaf chain, a successor thread. */
-  readonly links: ReadonlyMap<string, NodeId>;
+  /**
+   * Everything this node points at, keyed by slot name.
+   *
+   * One map rather than one per property. Children and links began as separate
+   * maps, and adding a weight would have made a third keyed the same way —
+   * which is the point at which the shape is wrong rather than merely growing.
+   */
+  readonly pointers: ReadonlyMap<string, ScenePointer>;
 }
 
 export interface SceneState {
@@ -98,8 +110,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
         slot: e.slot, origin: e.origin,
         ...(e.values === undefined ? {} : { values: e.values }),
         ...(e.depth === undefined ? {} : { depth: e.depth }),
-        children: new Map(),
-        links: new Map(),
+        pointers: new Map(),
       });
       return { ...s, nodes };
     }
@@ -112,13 +123,18 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
     case 'PointerSet': {
       const parent = s.nodes.get(e.from);
       if (parent === undefined) return s;
-      const into = new Map(e.pointer === 'link' ? parent.links : parent.children);
-      if (e.to === null) into.delete(e.slot);
-      else into.set(e.slot, e.to);
+      const pointers = new Map(parent.pointers);
+      if (e.to === null) {
+        pointers.delete(e.slot);
+      } else {
+        pointers.set(e.slot, {
+          to: e.to,
+          kind: e.pointer ?? 'child',
+          ...(e.weight === undefined ? {} : { weight: e.weight }),
+        });
+      }
       const nodes = new Map(s.nodes);
-      nodes.set(e.from, e.pointer === 'link'
-        ? { ...parent, links: into }
-        : { ...parent, children: into });
+      nodes.set(e.from, { ...parent, pointers });
       return { ...s, nodes };
     }
     case 'NodeReused': {
@@ -201,9 +217,9 @@ export function fingerprint(s: SceneState): string {
   const nodes = [...s.nodes.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([id, n]) => {
-      const pointers = [...n.children.entries(), ...[...n.links.entries()].map(([k, v]) => [`~${k}`, v] as const)]
+      const pointers = [...n.pointers.entries()]
         .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-        .map(([slot, child]) => `${slot}>${child}`)
+        .map(([slot, p]) => `${slot}${p.kind === 'link' ? '~' : ''}>${p.to}${p.weight === undefined ? '' : `@${p.weight}`}`)
         .join(',');
       return `${id}=${n.value}${n.label}@${n.slot}#${n.origin}` +
         `{${pointers}}x${s.reuseCount.get(id) ?? 0}v${s.visits.get(id) ?? 0}`;

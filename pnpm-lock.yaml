@@ -38,6 +38,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@algoverse/plugin-graph':
+        specifier: workspace:*
+        version: link:../../packages/plugins/graph
       '@algoverse/plugin-persistent-avl':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-avl
@@ -68,6 +71,9 @@ importers:
       '@algoverse/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
+      '@algoverse/plugin-shortest-path':
+        specifier: workspace:*
+        version: link:../../packages/plugins/shortest-path
       '@algoverse/plugin-stack':
         specifier: workspace:*
         version: link:../../packages/plugins/stack
@@ -91,6 +97,15 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/plugins/graph:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
 
   packages/plugins/persistent-avl:
     dependencies:
@@ -173,6 +188,15 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/shortest-path:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/stack:
     dependencies:
       '@algoverse/core':
@@ -187,6 +211,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+      '@algoverse/plugin-graph':
+        specifier: workspace:*
+        version: link:../plugins/graph
       '@algoverse/plugin-persistent-avl':
         specifier: workspace:*
         version: link:../plugins/persistent-avl
@@ -214,6 +241,9 @@ importers:
       '@algoverse/plugin-persistent-trie':
         specifier: workspace:*
         version: link:../plugins/persistent-trie
+      '@algoverse/plugin-shortest-path':
+        specifier: workspace:*
+        version: link:../plugins/shortest-path
       '@algoverse/plugin-stack':
         specifier: workspace:*
         version: link:../plugins/stack

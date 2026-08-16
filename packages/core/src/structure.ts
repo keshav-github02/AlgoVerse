@@ -63,6 +63,8 @@ export interface StructureEdge {
    * working out levels, or the structure folds along its own sideways edges.
    */
   readonly kind?: 'child' | 'link';
+  /** What the edge is worth, where that means something. Drawn beside it. */
+  readonly weight?: number;
 }
 
 export interface StructureGraph {

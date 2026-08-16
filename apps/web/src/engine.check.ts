@@ -352,10 +352,18 @@ for (const plugin of PLUGINS) {
   const report = measurePlugin(plugin);
   if (report === null) { check(`${plugin.meta.id} declares a benchmark`, false); continue; }
   const fit = report.declaredFit;
+  if (fit === null) {
+    // Two variables cannot be fitted against one axis, so there is nothing to
+    // agree or disagree with. Saying so beats failing, and beats passing.
+    console.log(`  skip  ${plugin.meta.id}: ${report.command} declares ` +
+      `${report.declared ?? '?'}, which is not a single-variable bound; ` +
+      `measures O(${report.bestFit.growth.label})`);
+    continue;
+  }
   check(
     `${plugin.meta.id}: ${report.command} declares ${report.declared ?? '?'}, measures O(${report.bestFit.growth.label})`,
     report.agrees,
-    fit === null ? '' : `R² ${fit.rSquared.toFixed(4)}, constant ${fit.constant.toFixed(2)}`,
+    `R² ${fit.rSquared.toFixed(4)}, constant ${fit.constant.toFixed(2)}`,
   );
 }
 

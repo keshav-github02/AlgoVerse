@@ -26,9 +26,11 @@ import { persistentAvl } from '@algoverse/plugin-persistent-avl';
 import { persistentBtree } from '@algoverse/plugin-persistent-btree';
 import { persistentSplay } from '@algoverse/plugin-persistent-splay';
 import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
+import { graph } from '@algoverse/plugin-graph';
+import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentBtree, persistentSplay, persistentBplus, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentBtree, persistentSplay, persistentBplus, graph, shortestPath, stack];
 
 export interface HistoryEntry {
   readonly line: string;

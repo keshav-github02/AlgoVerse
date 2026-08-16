@@ -33,9 +33,9 @@ export function Inspector({ state, selected }: {
 
   const parents: NodeId[] = [];
   for (const [id, n] of state.nodes) {
-    for (const child of n.children.values()) if (child === selected) parents.push(id);
+    for (const p of n.pointers.values()) if (p.to === selected) parents.push(id);
   }
-  const children = [...node.children.entries()];
+  const children = [...node.pointers.entries()];
 
   return (
     <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1.5 text-xs">

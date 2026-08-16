@@ -118,9 +118,9 @@ const readAll = (root: NodeId): number[] => {
   const walk = (id: NodeId): void => {
     const n = final.nodes.get(id);
     if (n === undefined) return;
-    if (n.children.size === 0) { out.push(n.value); return; }
+    if (n.pointers.size === 0) { out.push(n.value); return; }
     for (const slot of ['left', 'right']) {
-      const child = n.children.get(slot);
+      const child = n.pointers.get(slot)?.to;
       if (child !== undefined) walk(child);
     }
   };

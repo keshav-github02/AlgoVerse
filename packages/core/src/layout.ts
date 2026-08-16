@@ -47,6 +47,7 @@ export interface PositionedEdge {
   readonly slot: string;
   readonly reused: boolean;
   readonly kind: 'child' | 'link';
+  readonly weight?: number;
   readonly x1: number;
   readonly y1: number;
   readonly x2: number;
@@ -343,26 +344,138 @@ function gridded(graph: StructureGraph, o: LayoutOptions): PositionedScene {
   return finish(graph, placed, o);
 }
 
+/** Iterations of the force simulation. Fixed, so the result is reproducible. */
+const FORCE_PASSES = 400;
+
 /**
- * Placeholder for 'force'. Deterministic ring placement - readable for small
- * graphs, but no relaxation happens. Replace before shipping graph algorithms.
+ * Force-directed layout for structures with no hierarchy.
+ *
+ * Fruchterman-Reingold: every pair of nodes pushes apart, every edge pulls
+ * together, and the step size cools to zero so the arrangement settles rather
+ * than oscillating.
+ *
+ * **Deterministic by construction.** Nodes start evenly spaced on a circle in
+ * id order rather than at random, and the iteration count is fixed. A layout
+ * that moved between runs would make every check here untestable and every
+ * shared link show a different picture than its author saw.
  */
-function ringed(graph: StructureGraph, o: LayoutOptions): PositionedScene {
-  const n = graph.nodes.length;
-  const radius = Math.max(o.nodeWidth, (n * (o.nodeWidth + o.siblingGap)) / (2 * Math.PI));
+function forceDirected(graph: StructureGraph, o: LayoutOptions): PositionedScene {
+  const nodes = [...graph.nodes].sort((a, b) => a.id - b.id);
+  const n = nodes.length;
   const placed = new Map<NodeId, PositionedNode>();
-  [...graph.nodes]
-    .sort((a, b) => a.id - b.id)
-    .forEach((node, i) => {
-      const angle = (2 * Math.PI * i) / Math.max(1, n);
-      placed.set(node.id, {
-        node,
-        x: o.margin + radius + Math.cos(angle) * radius,
-        y: o.margin + radius + Math.sin(angle) * radius,
-        width: widthOf(node, o),
-        height: o.nodeHeight,
-      });
+  if (n === 0) return finish(graph, placed, o);
+
+  const spacing = o.nodeWidth + o.siblingGap;
+  const side = Math.max(spacing, spacing * Math.sqrt(n));
+  // The ideal edge length: spread n nodes evenly over the available area.
+  const k = side / Math.sqrt(n);
+
+  const index = new Map<NodeId, number>();
+  nodes.forEach((node, i) => index.set(node.id, i));
+  const px = new Float64Array(n);
+  const py = new Float64Array(n);
+  const radius = side / 2;
+  nodes.forEach((_, i) => {
+    const angle = (2 * Math.PI * i) / n;
+    px[i] = radius + Math.cos(angle) * radius;
+    py[i] = radius + Math.sin(angle) * radius;
+  });
+
+  const links = graph.edges
+    .map((e) => [index.get(e.from), index.get(e.to)] as const)
+    .filter((pair): pair is readonly [number, number] =>
+      pair[0] !== undefined && pair[1] !== undefined && pair[0] !== pair[1]);
+
+  const dx = new Float64Array(n);
+  const dy = new Float64Array(n);
+
+  for (let pass = 0; pass < FORCE_PASSES; pass += 1) {
+    dx.fill(0);
+    dy.fill(0);
+
+    for (let a = 0; a < n; a += 1) {
+      for (let b = a + 1; b < n; b += 1) {
+        let ox = (px[a] as number) - (px[b] as number);
+        let oy = (py[a] as number) - (py[b] as number);
+        let dist = Math.hypot(ox, oy);
+        if (dist < 1e-6) {
+          // Coincident nodes have no direction to separate along; nudge them
+          // apart by index so the tie is broken the same way every run.
+          ox = ((a % 7) - 3) / 10 + 1e-3;
+          oy = ((b % 5) - 2) / 10 + 1e-3;
+          dist = Math.hypot(ox, oy);
+        }
+        const push = (k * k) / dist;
+        dx[a] = (dx[a] as number) + (ox / dist) * push;
+        dy[a] = (dy[a] as number) + (oy / dist) * push;
+        dx[b] = (dx[b] as number) - (ox / dist) * push;
+        dy[b] = (dy[b] as number) - (oy / dist) * push;
+      }
+    }
+
+    for (const [a, b] of links) {
+      const ox = (px[a] as number) - (px[b] as number);
+      const oy = (py[a] as number) - (py[b] as number);
+      const dist = Math.max(1e-6, Math.hypot(ox, oy));
+      const pull = (dist * dist) / k;
+      dx[a] = (dx[a] as number) - (ox / dist) * pull;
+      dy[a] = (dy[a] as number) - (oy / dist) * pull;
+      dx[b] = (dx[b] as number) + (ox / dist) * pull;
+      dy[b] = (dy[b] as number) + (oy / dist) * pull;
+    }
+
+    const temperature = side * 0.1 * (1 - pass / FORCE_PASSES);
+    for (let i = 0; i < n; i += 1) {
+      const move = Math.hypot(dx[i] as number, dy[i] as number);
+      if (move < 1e-9) continue;
+      const step = Math.min(move, temperature) / move;
+      px[i] = (px[i] as number) + (dx[i] as number) * step;
+      py[i] = (py[i] as number) + (dy[i] as number) * step;
+    }
+  }
+
+  // Settling leaves nodes close but not necessarily clear of each other, so
+  // push overlapping pairs apart before anything is drawn.
+  const widths = nodes.map((node) => widthOf(node, o));
+  for (let pass = 0; pass < 60; pass += 1) {
+    let moved = false;
+    for (let a = 0; a < n; a += 1) {
+      for (let b = a + 1; b < n; b += 1) {
+        const needX = ((widths[a] as number) + (widths[b] as number)) / 2 + o.siblingGap;
+        const needY = o.nodeHeight + o.fanGap;
+        const gapX = (px[b] as number) - (px[a] as number);
+        const gapY = (py[b] as number) - (py[a] as number);
+        if (Math.abs(gapX) >= needX || Math.abs(gapY) >= needY) continue;
+        // Separate along whichever axis needs the smaller correction.
+        const shiftX = needX - Math.abs(gapX);
+        const shiftY = needY - Math.abs(gapY);
+        moved = true;
+        if (shiftX / needX <= shiftY / needY) {
+          const push = (gapX >= 0 ? 1 : -1) * shiftX / 2;
+          px[a] = (px[a] as number) - push;
+          px[b] = (px[b] as number) + push;
+        } else {
+          const push = (gapY >= 0 ? 1 : -1) * shiftY / 2;
+          py[a] = (py[a] as number) - push;
+          py[b] = (py[b] as number) + push;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  const minX = Math.min(...nodes.map((_, i) => (px[i] as number) - (widths[i] as number) / 2));
+  const minY = Math.min(...nodes.map((_, i) => (py[i] as number) - o.nodeHeight / 2));
+  nodes.forEach((node, i) => {
+    placed.set(node.id, {
+      node,
+      x: (px[i] as number) - minX + o.margin,
+      y: (py[i] as number) - minY + o.margin,
+      width: widths[i] as number,
+      height: o.nodeHeight,
     });
+  });
+
   return finish(graph, placed, o);
 }
 
@@ -383,6 +496,7 @@ function finish(
       const rightward = b.x >= a.x;
       edges.push({
         from: e.from, to: e.to, slot: e.slot, reused: e.reused, kind,
+        ...(e.weight === undefined ? {} : { weight: e.weight }),
         x1: a.x + (rightward ? a.width / 2 : -a.width / 2),
         y1: a.y,
         x2: b.x + (rightward ? -b.width / 2 : b.width / 2),
@@ -397,6 +511,7 @@ function finish(
       slot: e.slot,
       reused: e.reused,
       kind,
+      ...(e.weight === undefined ? {} : { weight: e.weight }),
       x1: a.x,
       y1: a.y + (downward ? a.height / 2 : -a.height / 2),
       x2: b.x,
@@ -419,7 +534,7 @@ export function layout(graph: StructureGraph, options: Partial<LayoutOptions> = 
     case 'grid':
       return gridded(graph, o);
     case 'force':
-      return ringed(graph, o);
+      return forceDirected(graph, o);
     default: {
       const never: never = graph.layout;
       throw new Error(`unhandled layout hint: ${String(never)}`);

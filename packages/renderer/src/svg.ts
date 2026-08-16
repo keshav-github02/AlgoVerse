@@ -19,6 +19,9 @@ export const SCENE_STYLES = `
   font-variant-numeric: tabular-nums; fill: var(--av-text, #171f27); }
 .av-node .av-label { font: 9.5px var(--av-mono, ui-monospace, Consolas, monospace);
   fill: var(--av-faint, #8695a3); }
+.av-weights .av-weight { font: 600 10.5px var(--av-mono, ui-monospace, Consolas, monospace);
+  fill: var(--av-text, #171f27); paint-order: stroke;
+  stroke: var(--av-node-bg, #fff); stroke-width: 3.5px; stroke-linejoin: round; }
 .av-node.av-highlight rect { stroke-width: 3; }
 .av-node.av-dim { opacity: .12; }
 .av-node.av-selected rect { stroke-width: 3.25; }

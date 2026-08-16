@@ -396,6 +396,62 @@ and all its ancestors on every split. This plugin instead maintains the chain de
 the tree stays persistent, and says so: scrubbing moves the chain with you, but two versions' chains
 cannot be seen at once.
 
+### Phase 4 begins, and the placeholder goes
+
+The graph is the first structure with no hierarchy at all — no root, no parent, and no guarantee it
+is even connected. `force` had been a documented placeholder since layout was written: deterministic
+ring placement with no relaxation, marked "replace before shipping graph algorithms". It is now a
+real Fruchterman-Reingold simulation, and the graph plugin is what proves it.
+
+**Deterministic by construction.** Nodes start evenly spaced on a circle in id order rather than at
+random, and the iteration count is fixed. A layout that moved between runs would make every check
+here untestable and every shared link show a different picture than its author saw. Settling is
+followed by a separation pass, because a force simulation leaves nodes close but not reliably clear
+of one another.
+
+It works: on a ten-vertex graph, joined vertices settle **137px** apart and unjoined ones **420px**.
+
+Three things the contract already handled, which is the more useful signal:
+
+- Graph edges are `kind: 'link'` — neither end is the other's parent — so the machinery added for
+  the B+ tree's leaf chain covered them unchanged.
+- A traversal is a read that allocates nothing, so the version machinery simply goes unused.
+- **Every vertex is an entry point.** An unrooted structure has no other honest answer for `roots`,
+  and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
+  might be disconnected.
+
+One check needed loosening rather than the code. `bfs` declares `O(V + E)`, and two variables
+cannot be fitted against one axis — the complexity parser says so deliberately. The measured-cost
+check now reports that as **skipped** rather than failed: there is nothing to agree or disagree
+with, and saying so beats both failing and quietly passing.
+
+### The first edges that carry data
+
+Everything before Dijkstra put its information in nodes. A shortest path is decided by what the
+*edges* are worth, and `StructureEdge` had nowhere to put a number.
+
+The fix was not to add one field. `SceneNode` already carried `children` and `links` as two maps
+keyed the same way, and a weight would have made a third — which is the point at which the shape is
+wrong rather than merely growing. Both collapsed into one `pointers` map of
+`{ to, kind, weight? }`. Six call sites, and every suite passed unchanged afterwards.
+
+The weight travels in the log, on `PointerSet`, for the same reason the B+ tree's leaf chain had to:
+a value the picture shows and the log does not carry is a value replay cannot rebuild. The renderer
+draws it at the edge midpoint, stroked in the surface colour so a line never crosses its own number.
+
+**Dijkstra selects by scanning, not with a heap, and that is deliberate.** Every vertex the scan
+reads is emitted as a read, so the O(V²) is visible in the cost chart rather than asserted — and the
+case for a heap is made by the curve. The benchmark stops at 64 vertices because a quadratic scan
+that files an event per read would otherwise log sixteen thousand of them to measure one point.
+
+A negative cost is refused rather than quietly mishandled, with the reason in the hint: Dijkstra
+settles a vertex once and never revisits it, which is exactly what a negative edge would break.
+
+Correctness is checked against **a different algorithm**, not a reimplementation of the same one —
+repeated relaxation over every edge, which arrives at the same distances by a route that shares no
+code. Twenty-nine graphs, eighty-nine sources. Every route `path` reports is also walked edge by
+edge to confirm it costs what it claims.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets

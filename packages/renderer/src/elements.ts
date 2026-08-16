@@ -64,6 +64,7 @@ export function sceneElements(
   for (const p of scene.nodes) originOf.set(p.node.id, p.node.origin);
 
   const emphasis = options.emphasis;
+  const weights: SceneElement[] = [];
   const edges: SceneElement[] = scene.edges.map((e) => {
     const dy = e.y2 - e.y1;
     const d = Math.abs(dy) < 1
@@ -88,6 +89,22 @@ export function sceneElements(
       },
     };
   });
+
+  // Weights ride above the edges so a line never crosses its own number.
+  for (const e of scene.edges) {
+    if (e.weight === undefined) continue;
+    weights.push({
+      tag: 'text',
+      attrs: {
+        className: 'av-weight',
+        x: n2((e.x1 + e.x2) / 2),
+        y: n2((e.y1 + e.y2) / 2),
+        textAnchor: 'middle',
+        dy: '0.32em',
+      },
+      text: String(e.weight),
+    });
+  }
 
   const nodes: SceneElement[] = scene.nodes.map((p) => {
     const { node } = p;
@@ -150,6 +167,7 @@ export function sceneElements(
 
   return [
     { tag: 'g', attrs: { className: 'av-edges' }, children: edges },
+    { tag: 'g', attrs: { className: 'av-weights' }, children: weights },
     { tag: 'g', attrs: { className: 'av-nodes' }, children: nodes },
   ];
 }
