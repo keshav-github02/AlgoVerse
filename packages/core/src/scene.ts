@@ -27,6 +27,7 @@ export function sceneToStructure(scene: SceneState, layoutHint: LayoutHint): Str
       ...(n.depth === undefined ? {} : { depth: n.depth }),
       slot: n.slot,
       origin: n.origin,
+      ...(n.group === undefined ? {} : { group: n.group }),
     });
     for (const [slot, p] of n.pointers) {
       const target = scene.nodes.get(p.to);

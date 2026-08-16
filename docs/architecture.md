@@ -420,6 +420,57 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Colour by group, not only by provenance
+
+A node's colour has always come from `origin` - which generation allocated it.
+That is the right thing to see in a persistent structure, and useless in one
+without history, where every node has origin 0 and the whole picture is one
+colour.
+
+Two plugins wanted the same thing and were refused it. Strongly connected
+components wanted to colour by component; heavy-light decomposition wants to
+colour by chain, and a decomposition you cannot see is not one you can reason
+about. Repurposing `origin` was rejected both times - it means *when*, and
+overloading it to mean *what it is part of* would make two unrelated things
+indistinguishable in the model.
+
+So `group` is its own optional field, carried through `StructureNode`,
+`NodeAllocated`, `SceneNode` and the renderer. It takes the same palette,
+because no structure needs both at once: a partition is interesting exactly
+when there is no history to show.
+
+### Heavy-light: two benchmarks that were measuring the wrong thing
+
+The decomposition itself was straightforward. What it cost was two honest
+measurements, and both failures were in this repository's own tests rather
+than in the algorithm.
+
+Declaring `O(log² n)` meant adding that growth class, and adding it
+immediately reclassified the **splay tree**: its `access` had been declared
+`O(log n) amortised` and now measured `log² n` at a better fit. Chasing that
+down, the splay's benchmark was doing two wrong things at once. It capped the
+probe count at 48 regardless of `n`, so at n = 256 the (n log n)/m startup
+term - not the amortised bound - was most of what it measured. And its probe
+keys swept the tree in ascending order, which a splay tree does in O(1)
+amortised, so the pattern that did run was measuring a real property but not
+the declared one. Probes proportional to `n`, stepping by a prime, put it at
+R² 0.954 for `log n`.
+
+Then HLD's own `path` measured `O(1)`. Two separate causes:
+
+- The implementation emitted a `NodeVisited` for every vertex in every range,
+  which is O(path length) work inside an operation whose entire purpose is not
+  to touch those vertices. It now emits the two ends of each range.
+- The benchmark probed the path between two leaves half the tree apart. That
+  is the longest path by vertices and not by *chains*: both ends sat on the
+  same heavy spine, so it crossed two chains at every size. A path down the
+  all-right spine crosses a light edge per level, and measures R² **1.0000**
+  against `log n`.
+
+What is declared is what the log can honestly show: the number of contiguous
+ranges. The second logarithm - the segment tree query inside each range -
+happens in a plain array with no nodes to visit, so no event can report it.
+
 ### Red-black: the balance that needs no parent pointer
 
 The AVL tree keeps a height on every node; this one keeps a single bit. What

@@ -68,8 +68,13 @@ export function sceneElements(
   const showLabels = options.showLabels ?? true;
   const hue = (origin: number): string => `var(--av-c${origin % PALETTE_SIZE})`;
 
+  /*
+   * Which palette slot a node takes. A plugin that declares a group is saying
+   * the partition is the thing worth seeing; one that does not is showing
+   * where its nodes came from. Nothing needs both, so one channel serves both.
+   */
   const originOf = new Map<NodeId, number>();
-  for (const p of scene.nodes) originOf.set(p.node.id, p.node.origin);
+  for (const p of scene.nodes) originOf.set(p.node.id, p.node.group ?? p.node.origin);
 
   const emphasis = options.emphasis;
   const weights: SceneElement[] = [];
@@ -153,7 +158,7 @@ export function sceneElements(
     const { node } = p;
     const x = p.x - p.width / 2;
     const y = p.y - p.height / 2;
-    const colour = hue(node.origin);
+    const colour = hue(node.group ?? node.origin);
     const classes = ['av-node'];
     if (highlight.has(node.id)) classes.push('av-highlight');
     if (dim.has(node.id)) classes.push('av-dim');
