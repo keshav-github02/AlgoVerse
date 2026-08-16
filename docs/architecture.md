@@ -420,6 +420,55 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Lazy tags that are never pushed down
+
+A range update marks the O(log n) nodes covering the range and leaves
+everything below them alone. The textbook then *pushes* that tag down on the
+next visit - and that is precisely what a persistent structure cannot do,
+because the nodes below are shared with every earlier version and pushing
+would rewrite their past.
+
+So nothing is ever pushed. A tag stays where it lands and a query adds up the
+tags it passes on the way down. The two ideas fit together better than they do
+in the mutable case: not pushing is what makes a range update O(log n)
+*allocations* rather than O(log n) now and an unbounded rewrite later. Measured
+on 256 entries: covering 200 indices costs **19 nodes**, covering 2 costs 8.
+
+The consequence worth knowing is that a node's number is no longer its range's
+total - it is the total of everything at or below it, with the tags above it
+still to be added. That is what the tree stores, so that is what is drawn, and
+a node carrying a tag says so in its label.
+
+Two things fell out of it:
+
+- A point write under a tag must store `value - carried`, so that adding the
+  tags back gives what was written. Getting that sign wrong is invisible until
+  a range update and a point write meet on the same index, which is now a
+  check of its own.
+- `kth` descends by comparing against the left child, which needs every value
+  to be non-negative. The range minimum added alongside `min` sits on the
+  root, so the precondition costs nothing - the plugin refuses with the reason
+  rather than returning a plausible wrong index.
+
+The explainer went wrong in the way it has before: it described a reused node
+under a tag as *untouched by this write*. It is not untouched - its values
+change by the tag - it is merely not copied, and the old wording taught the
+opposite of how a tag works. There is now a check on the wording itself.
+
+### What the BIT deliberately does not do
+
+The Fenwick tree gained `range` and `kth` and **not** range update. One
+Fenwick array serves range updates with point reads, or point updates with
+range reads, never both; doing both needs a second array alongside it, which
+would also cost `kth` - the descent works because a prefix is a walk down the
+parent chain, and with two arrays a prefix stops being one. Range updates
+against range reads belong on the segment tree, where a tag can sit and wait.
+
+`kth` is the operation the Fenwick shape gives away for free: each cell holds
+a block whose width is a power of two, so the descent tries the widest blocks
+first and takes each it can afford - **9 cells for 256 entries**. A plain array
+of prefix sums cannot do it at all.
+
 ### Euler tour: the encoding decided the algorithm
 
 Heavy-light flattens a tree so a *path* is a few ranges, and cannot survive the

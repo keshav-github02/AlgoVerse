@@ -9,6 +9,16 @@
  * Two things here that the segment tree never needed: the forest has several
  * roots unless n is a power of two, and cells must be drawn in index order
  * rather than traversal order.
+ *
+ * ## What this deliberately does not do
+ *
+ * There is no range update here, and that is a property of the structure
+ * rather than an omission. One Fenwick array can serve range updates with
+ * point reads, or point updates with range reads - not both. Doing both needs
+ * a second array alongside this one, which would also cost `kth`: the descent
+ * below works because a prefix is a walk down the parent chain, and with two
+ * arrays a prefix stops being that. Range updates against range reads belong
+ * on the segment tree, where a tag can sit on a node and wait.
  */
 
 import {
@@ -62,6 +72,25 @@ const COMMANDS: readonly CommandSpec[] = [
     ],
   },
   {
+    name: 'range',
+    summary: 'Sum an inclusive range, as the difference of two prefixes.',
+    complexity: 'O(log n)',
+    params: [
+      { name: 'version', kind: 'version' },
+      { name: 'lo', kind: 'int' },
+      { name: 'hi', kind: 'int' },
+    ],
+  },
+  {
+    name: 'kth',
+    summary: 'First index whose prefix reaches k, found by descending the forest once.',
+    complexity: 'O(log n)',
+    params: [
+      { name: 'version', kind: 'version' },
+      { name: 'k', kind: 'int' },
+    ],
+  },
+  {
     name: 'compare',
     summary: 'Report how much memory two versions share.',
     complexity: 'O(n)',
@@ -80,12 +109,22 @@ class Instance implements PluginInstance {
   #cells = new Map<NodeId, Cell>();
   /** One array per version: index -> the cell that version sees. */
   #versions: (NodeId | undefined)[][] = [];
+  /**
+   * How many entries of each version are below zero.
+   *
+   * Kept because `kth` descends by comparing a running total against k, which
+   * only finds the right index while those totals never fall. Recomputing it
+   * would cost O(n log n) on a query that is supposed to be O(log n), and the
+   * count changes by at most one per write.
+   */
+  #negatives: number[] = [];
   #size = 0;
   #next = 0;
 
   reset(): void {
     this.#cells = new Map();
     this.#versions = [];
+    this.#negatives = [];
     this.#size = 0;
     this.#next = 0;
   }
@@ -95,6 +134,8 @@ class Instance implements PluginInstance {
       case 'build': return this.#build(getIntList(cmd, 'values'));
       case 'add': return this.#add(getVersion(cmd, 'version'), getInt(cmd, 'index'), getInt(cmd, 'delta'));
       case 'prefix': return this.#prefix(getVersion(cmd, 'version'), getInt(cmd, 'k'));
+      case 'range': return this.#range(getVersion(cmd, 'version'), getInt(cmd, 'lo'), getInt(cmd, 'hi'));
+      case 'kth': return this.#kth(getVersion(cmd, 'version'), getInt(cmd, 'k'));
       case 'compare': return this.#compare(getVersion(cmd, 'a'), getVersion(cmd, 'b'));
       default:
         return failed(err('PARSE_ERROR', `This plugin does not handle "${cmd.name}".`));
@@ -200,6 +241,7 @@ class Instance implements PluginInstance {
       this.#link(cell, table, events);
     }
 
+    this.#negatives[0] = values.filter((x) => x < 0).length;
     this.#commit(table, 0, events);
     return {
       ok: true,
@@ -243,10 +285,16 @@ class Instance implements PluginInstance {
       this.#link(this.#cells.get(table[i] as NodeId) as Cell, table, events);
     }
 
+    // Only this index's entry changed, so the count moves by at most one.
+    const was = this.#entryAt(previous, index);
+    const now = was + delta;
+    this.#negatives[version] =
+      (this.#negatives[v] ?? 0) + (now < 0 ? 1 : 0) - (was < 0 ? 1 : 0);
+
     this.#commit(table, version, events);
     return {
       ok: true,
-      value: { version, allocated, reused: this.#size - allocated },
+      value: { version, allocated, reused: this.#size - allocated, entry: now },
       events,
       statsDelta: {
         versions: 1,
@@ -283,6 +331,95 @@ class Instance implements PluginInstance {
     return {
       ok: true,
       value: { sum, visits: visited.length },
+      events: visited.map((id): SimEvent => ({ kind: 'NodeVisited', node: id })),
+      statsDelta: { queries: 1, nodeVisits: visited.length },
+    };
+  }
+
+  /** One entry, as the difference of two prefixes. */
+  #entryAt(table: readonly (NodeId | undefined)[], index: number): number {
+    return this.#prefixOf(table, index).sum - this.#prefixOf(table, index - 1).sum;
+  }
+
+  #range(v: number, lo: number, hi: number): OperationResult {
+    const table = this.#versions[v];
+    if (table === undefined) {
+      return failed(err('UNKNOWN_VERSION', `Version v${v} does not exist.`, this.#available()));
+    }
+    if (lo < 1 || hi > this.#size || lo > hi) {
+      return failed(err('INVALID_RANGE',
+        `Range ${lo}..${hi} is not inside 1..${this.#size}.`,
+        'both ends are included, and this structure is 1-indexed'));
+    }
+
+    /*
+     * A Fenwick tree only knows prefixes, so a range is the difference of
+     * two of them. That subtraction is why it needs the values to be a group
+     * under addition - it is the reason the same shape cannot answer a range
+     * minimum, where nothing can be taken away again.
+     */
+    const upper = this.#prefixOf(table, hi);
+    const lower = this.#prefixOf(table, lo - 1);
+    const visited = [...upper.visited, ...lower.visited];
+
+    return {
+      ok: true,
+      value: { sum: upper.sum - lower.sum, visits: visited.length },
+      events: visited.map((id): SimEvent => ({ kind: 'NodeVisited', node: id })),
+      statsDelta: { queries: 1, nodeVisits: visited.length },
+    };
+  }
+
+  #kth(v: number, k: number): OperationResult {
+    const table = this.#versions[v];
+    if (table === undefined) {
+      return failed(err('UNKNOWN_VERSION', `Version v${v} does not exist.`, this.#available()));
+    }
+    if (k < 1) {
+      return failed(err('BAD_ARGUMENT', `k must be at least 1; ${k} was given.`,
+        'k counts from one, so k = 1 asks for the first index carrying any weight'));
+    }
+    if ((this.#negatives[v] ?? 0) > 0) {
+      return failed(err('PRECONDITION_FAILED',
+        `v${v} holds ${this.#negatives[v]} negative ${(this.#negatives[v] ?? 0) === 1 ? 'entry' : 'entries'}, so prefixes do not only rise.`,
+        'the descent below assumes a prefix never shrinks, which is what lets it skip whole blocks'));
+    }
+    const total = this.#prefixOf(table, this.#size).sum;
+    if (total < k) {
+      return failed(err('PRECONDITION_FAILED',
+        `The whole array totals ${total}, which never reaches ${k}.`,
+        'ask for a k no larger than the total'));
+    }
+
+    /*
+     * Binary lifting. Each cell already holds the sum of a block whose length
+     * is a power of two, so the descent tries the blocks largest first and
+     * takes each one it can still afford. That is the operation the Fenwick
+     * shape gives away for free and a plain prefix-sum array cannot do at all.
+     */
+    const visited: NodeId[] = [];
+    let position = 0;
+    let remaining = k;
+    let step = 1;
+    while (step * 2 <= this.#size) step *= 2;
+
+    for (; step > 0; step = Math.floor(step / 2)) {
+      const next = position + step;
+      if (next > this.#size) continue;
+      const id = table[next];
+      if (id === undefined) continue;
+      visited.push(id);
+      const block = (this.#cells.get(id) as Cell).value;
+      if (block < remaining) {
+        position = next;
+        remaining -= block;
+      }
+    }
+
+    return {
+      ok: true,
+      // One descent, and it never walks back up.
+      value: { k, index: position + 1, visits: visited.length },
       events: visited.map((id): SimEvent => ({ kind: 'NodeVisited', node: id })),
       statsDelta: { queries: 1, nodeVisits: visited.length },
     };

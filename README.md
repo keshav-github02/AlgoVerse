@@ -89,8 +89,8 @@ algoverse/
 
 | Phase | Scope |
 | --- | --- |
-| 1 | Persistent segment tree - build, update, query, version timeline, version comparison, memory sharing, playback, statistics, explanations |
-| 2 | Persistent BIT, treap, trie and BST - **complete** |
+| 1 | Persistent segment tree - build, point and range update, sum/min/max query, kth descent, version timeline, version comparison, memory sharing, playback, statistics, explanations |
+| 2 | Persistent BIT (prefix, range, kth), treap, trie and BST - **complete** |
 | 3 | AVL, red-black, B-tree, B+ tree and splay - **complete** |
 | 4 | Graphs - DFS, BFS, Dijkstra, SCC and topological sort **(done)**, Prim, Kruskal, bridges, articulation points |
 | 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |

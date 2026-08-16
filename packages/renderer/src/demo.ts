@@ -198,8 +198,8 @@ function drive(
 
 const panels: readonly Panel[] = [
   drive(persistentSegmentTree,
-    ['build [3 1 4 1 5 9 2 6]', 'update v0 3 10', 'update v1 6 7', 'query v1 2 5'], 'dag'),
-  drive(persistentBit, ['build [3 1 4 1 5 9 2 6]', 'add v0 3 5', 'prefix v1 5'], 'dag'),
+    ['build [3 1 4 1 5 9 2 6]', 'update v0 3 10', 'apply v1 1 6 4', 'query v2 2 5', 'kth v2 20'], 'dag'),
+  drive(persistentBit, ['build [3 1 4 1 5 9 2 6]', 'add v0 3 5', 'range v1 2 6', 'kth v1 20'], 'dag'),
   drive(persistentTreap, ['build [5 2 8 1 9]', 'insert v0 6', 'erase v1 2'], 'dag'),
   drive(persistentTrie, ['build [cat car card dog]', 'insert v0 care'], 'dag'),
   drive(persistentBst, ['build [1 2 3 4 5 6]', 'find v0 6'], 'dag'),
