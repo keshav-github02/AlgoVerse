@@ -53,6 +53,9 @@ importers:
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../../packages/plugins/hld
+      '@algoverse/plugin-li-chao':
+        specifier: workspace:*
+        version: link:../../packages/plugins/li-chao
       '@algoverse/plugin-persistent-avl':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-avl
@@ -153,6 +156,15 @@ importers:
         version: link:../../plugin-sdk
 
   packages/plugins/hld:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/li-chao:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -298,6 +310,9 @@ importers:
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../plugins/hld
+      '@algoverse/plugin-li-chao':
+        specifier: workspace:*
+        version: link:../plugins/li-chao
       '@algoverse/plugin-persistent-avl':
         specifier: workspace:*
         version: link:../plugins/persistent-avl
