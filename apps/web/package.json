@@ -16,6 +16,7 @@
     "@algoverse/plugin-fenwick-range": "workspace:*",
     "@algoverse/plugin-graph": "workspace:*",
     "@algoverse/plugin-hld": "workspace:*",
+    "@algoverse/plugin-li-chao": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",
     "@algoverse/plugin-persistent-bit": "workspace:*",
     "@algoverse/plugin-persistent-bplus": "workspace:*",
