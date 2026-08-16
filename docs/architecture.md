@@ -420,6 +420,53 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Order statistics, three ways
+
+`kth` - the k-th smallest thing - is the same question asked of three
+structures, and each answers it with what it already had lying around.
+
+- **Segment tree**: descend, comparing k against the left child's total.
+- **Fenwick tree**: take the widest block you can still afford. Nine cells for
+  256 entries.
+- **Balanced tree**: neither AVL nor red-black could do it at all. A search
+  tree puts keys in order but cannot say *how far along* one is, so both gained
+  a subtree count - kept in the same breath as the AVL's height, and for the
+  same reason: a fact about a subtree that costs a walk to recompute and
+  nothing to carry.
+
+The check that matters for the trees is `the counts survive rebalancing`.
+Nothing else reads the count, so a rotation that rebuilt a node without
+recomputing it would be silently wrong ever after. Sixty-four sorted keys -
+the input that rotates on nearly every insert - and every position verified.
+
+`rank` came with it and is the inverse: how many keys come before a value,
+whether or not that value is there. That last part is what makes it answer
+"where would this go" as well as "where is it", and the two together are
+checked against each other as well as against a sorted array.
+
+### One Fenwick array cannot do both
+
+The Fenwick tree answers a range and writes one index. Writing a *range* and
+answering a prefix needs a different arrangement of the same idea - store the
+array's differences, so a range add is two writes - and reading a sum back out
+of differences needs a second array to undo the offsets.
+
+That is a different structure, not another command, so it is a different
+plugin. Folding it into the existing one would have cost `kth`, which descends
+by taking the widest block it can afford: with two arrays a cell holds part of
+a difference rather than the sum of a block, so there is no block to take and
+finding a position drops to a binary search at O(log² n). It would also have
+made every point write copy four chains instead of one. The contrast is the
+lesson, and it is easier to see with both on the page.
+
+The new plugin found the stranding bug this repository has now hit four times.
+A range write touches two chains of the same array, and where they meet the
+second walk was replacing the cell the first had just allocated - leaving it
+allocated, pointed at by nothing, and part of no version. The chains are merged
+before anything is allocated. An index whose two deltas *cancel* is still
+copied: its value is unchanged but its children are not, and one cell cannot
+hold the pointers of two versions at once.
+
 ### Lazy tags that are never pushed down
 
 A range update marks the O(log n) nodes covering the range and leaves

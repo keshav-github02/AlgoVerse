@@ -54,7 +54,7 @@ Four packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-| `plugins/*` | One package per algorithm or data structure | 16 structures, from segment tree to dynamic connectivity |
+| `plugins/*` | One package per algorithm or data structure | 17 structures, from segment tree to dynamic connectivity |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
@@ -90,8 +90,8 @@ algoverse/
 | Phase | Scope |
 | --- | --- |
 | 1 | Persistent segment tree - build, point and range update, sum/min/max query, kth descent, version timeline, version comparison, memory sharing, playback, statistics, explanations |
-| 2 | Persistent BIT (prefix, range, kth), treap, trie and BST - **complete** |
-| 3 | AVL, red-black, B-tree, B+ tree and splay - **complete** |
+| 2 | Persistent BIT (prefix, range, kth) and its range-update twin, treap, trie and BST - **complete** |
+| 3 | AVL and red-black (with kth and rank), B-tree, B+ tree and splay - **complete** |
 | 4 | Graphs - DFS, BFS, Dijkstra, SCC and topological sort **(done)**, Prim, Kruskal, bridges, articulation points |
 | 5 | Strings - KMP, Rabin-Karp, Z algorithm, Aho-Corasick, suffix array, suffix tree, suffix automaton |
 | 6 | Heavy-light decomposition and Euler tour tree **(done)**, link-cut tree, merge sort tree, wavelet tree, Li Chao tree |

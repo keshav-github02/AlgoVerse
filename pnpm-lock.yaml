@@ -44,6 +44,9 @@ importers:
       '@algoverse/plugin-euler-tour':
         specifier: workspace:*
         version: link:../../packages/plugins/euler-tour
+      '@algoverse/plugin-fenwick-range':
+        specifier: workspace:*
+        version: link:../../packages/plugins/fenwick-range
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../../packages/plugins/graph
@@ -120,6 +123,15 @@ importers:
         version: link:../../plugin-sdk
 
   packages/plugins/euler-tour:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/fenwick-range:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -265,6 +277,9 @@ importers:
       '@algoverse/plugin-euler-tour':
         specifier: workspace:*
         version: link:../plugins/euler-tour
+      '@algoverse/plugin-fenwick-range':
+        specifier: workspace:*
+        version: link:../plugins/fenwick-range
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../plugins/graph

@@ -31,6 +31,12 @@ interface Node {
   readonly key: number;
   /** Height of this subtree. Stored so balance is O(1) to check. */
   readonly height: number;
+  /**
+   * How many keys are at or below this node. Kept in the same breath as the
+   * height, and for the same reason: a fact about a subtree that would cost a
+   * walk to recompute and nothing to carry.
+   */
+  readonly count: number;
   readonly left: NodeId | null;
   readonly right: NodeId | null;
   readonly origin: number;
@@ -67,6 +73,24 @@ const COMMANDS: readonly CommandSpec[] = [
   {
     name: 'find',
     summary: 'Look a key up, reporting how many nodes it had to walk.',
+    complexity: 'O(log n)',
+    params: [
+      { name: 'version', kind: 'version' },
+      { name: 'key', kind: 'int' },
+    ],
+  },
+  {
+    name: 'kth',
+    summary: 'The k-th smallest key, found by descending on subtree sizes.',
+    complexity: 'O(log n)',
+    params: [
+      { name: 'version', kind: 'version' },
+      { name: 'k', kind: 'int' },
+    ],
+  },
+  {
+    name: 'rank',
+    summary: 'How many keys come before a value, whether or not the value is there.',
     complexity: 'O(log n)',
     params: [
       { name: 'version', kind: 'version' },
@@ -157,6 +181,8 @@ class Instance implements PluginInstance {
       case 'insert': return this.#insert(getVersion(cmd, 'version'), getInt(cmd, 'key'));
       case 'erase': return this.#erase(getVersion(cmd, 'version'), getInt(cmd, 'key'));
       case 'find': return this.#find(getVersion(cmd, 'version'), getInt(cmd, 'key'));
+      case 'kth': return this.#kth(getVersion(cmd, 'version'), getInt(cmd, 'k'));
+      case 'rank': return this.#rank(getVersion(cmd, 'version'), getInt(cmd, 'key'));
       case 'compare': return this.#compare(getVersion(cmd, 'a'), getVersion(cmd, 'b'));
       default:
         return failed(err('PARSE_ERROR', `This plugin does not handle "${cmd.name}".`));
@@ -183,6 +209,10 @@ class Instance implements PluginInstance {
     return id === null ? 0 : this.#get(id).height;
   }
 
+  #count(id: NodeId | null): number {
+    return id === null ? 0 : this.#get(id).count;
+  }
+
   balanceOf(node: Node): Balance {
     const slope = this.#height(node.left) - this.#height(node.right);
     if (slope > 0) return 'left-heavy';
@@ -194,7 +224,8 @@ class Instance implements PluginInstance {
     const id = this.#next as NodeId;
     this.#next += 1;
     const height = 1 + Math.max(this.#height(left), this.#height(right));
-    const node: Node = { id, key, height, left, right, origin };
+    const count = 1 + this.#count(left) + this.#count(right);
+    const node: Node = { id, key, height, count, left, right, origin };
     this.#nodes.set(id, node);
     events.push({
       kind: 'NodeAllocated',
@@ -340,7 +371,7 @@ class Instance implements PluginInstance {
 
     return {
       ok: true,
-      value: { version: 0, size: this.#keysOf(root).length, height: this.#height(root) },
+      value: { version: 0, size: this.#count(root), height: this.#height(root) },
       events,
       statsDelta: { versions: 1, nodesAllocated: this.#nodes.size, height: this.#height(root) },
     };
@@ -422,6 +453,85 @@ class Instance implements PluginInstance {
       value: { found, key, visits: visited.length, height: this.#height(root) },
       events: visited.map((id): SimEvent => ({ kind: 'NodeVisited', node: id })),
       statsDelta: { queries: 1, nodeVisits: visited.length, height: this.#height(root) },
+    };
+  }
+
+  /**
+   * The k-th smallest key, counting from one.
+   *
+   * A search tree already puts the keys in order; what it cannot do without
+   * a count on every node is say *how far along* one is. With the count, the
+   * question "is the answer left of here, here, or right of here" is decided
+   * by one subtraction, and the walk never turns back.
+   */
+  #kth(v: number, k: number): OperationResult {
+    const root = this.#rootOf(v);
+    if (root === undefined) {
+      return failed(err('UNKNOWN_VERSION', `Version v${v} does not exist.`, this.#available()));
+    }
+    const total = this.#count(root);
+    if (k < 1 || k > total) {
+      return failed(err('INDEX_OUT_OF_RANGE',
+        `There is no ${k}th key; v${v} holds ${total}.`,
+        total === 0 ? 'this version is empty' : `k runs from 1 to ${total}`));
+    }
+
+    const events: SimEvent[] = [];
+    let cursor = root as NodeId;
+    let remaining = k;
+    for (;;) {
+      const node = this.#get(cursor);
+      events.push({ kind: 'NodeVisited', node: cursor });
+      const before = this.#count(node.left);
+      if (remaining <= before) { cursor = node.left as NodeId; continue; }
+      if (remaining === before + 1) break;
+      remaining -= before + 1;
+      cursor = node.right as NodeId;
+    }
+
+    return {
+      ok: true,
+      value: { k, key: this.#get(cursor).key, visits: events.length },
+      events,
+      statsDelta: { queries: 1, nodeVisits: events.length },
+    };
+  }
+
+  /**
+   * How many keys are strictly smaller than the one asked about.
+   *
+   * The inverse of `kth`, and it does not need the key to be present - which
+   * is what makes it answer "where would this go" as well as "where is it".
+   */
+  #rank(v: number, key: number): OperationResult {
+    const root = this.#rootOf(v);
+    if (root === undefined) {
+      return failed(err('UNKNOWN_VERSION', `Version v${v} does not exist.`, this.#available()));
+    }
+
+    const events: SimEvent[] = [];
+    let cursor: NodeId | null = root;
+    let below = 0;
+    let present = false;
+
+    while (cursor !== null) {
+      const node = this.#get(cursor);
+      events.push({ kind: 'NodeVisited', node: cursor });
+      if (key <= node.key) {
+        if (key === node.key) present = true;
+        cursor = node.left;
+      } else {
+        // Everything in this left subtree, and this node, come before the key.
+        below += this.#count(node.left) + 1;
+        cursor = node.right;
+      }
+    }
+
+    return {
+      ok: true,
+      value: { key, rank: below, present, size: this.#count(root), visits: events.length },
+      events,
+      statsDelta: { queries: 1, nodeVisits: events.length },
     };
   }
 
