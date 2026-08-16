@@ -420,6 +420,38 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Red-black: the balance that needs no parent pointer
+
+The AVL tree keeps a height on every node; this one keeps a single bit. What
+makes it worth having here is not the algorithm but how it is written.
+
+Textbook red-black insertion walks back **up** from the new leaf through parent
+pointers, recolouring and rotating. A persistent tree has no parent pointers to
+walk, and cannot have them: a node is shared by every version that still
+contains it, so it has no single parent to point at. The functional
+formulation - a `balance` that takes a colour and two subtrees and returns the
+repaired shape - needs none, so the awkward constraint and the natural
+implementation happen to agree.
+
+Deletion carries a shortfall rather than a pointer. Removing a black node
+leaves its path one black short, and that is carried up as two colours that
+exist for the length of one operation and are never stored: **double black**
+and **negative black**. A check asserts no allocated node ever has one - a
+transient colour reaching a node would mean the repair silently gave up.
+
+Shapes are drafted before anything is allocated, for the reason the treap
+established: rebalancing discards intermediate arrangements, and a node
+allocated into one it then discards is stranded. Drafting first means the
+discarded arrangement was never allocated. An untouched subtree stays a bare
+`NodeId` in the draft, which is also what keeps the sharing exact.
+
+One thing the tests corrected, and it was the test: `getStructure().roots`
+drops null roots, because a version emptied by its last erase has no node to
+point at. Matching roots to versions **by index** therefore silently shifts
+once any version is empty. They are matched by order among the non-empty
+versions instead, which turned out to be the stronger check anyway - it
+compares every version on every write rather than just the newest.
+
 ### The one thing it did not handle: direction
 
 `StructureEdge` has always run `from` to `to`, so the model knew which way every pointer pointed.

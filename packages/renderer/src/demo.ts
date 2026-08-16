@@ -29,6 +29,7 @@ import { persistentTrie } from '@algoverse/plugin-persistent-trie';
 import { persistentBst } from '@algoverse/plugin-persistent-bst';
 import { persistentAvl } from '@algoverse/plugin-persistent-avl';
 import { persistentBtree } from '@algoverse/plugin-persistent-btree';
+import { persistentRbt } from '@algoverse/plugin-persistent-rbt';
 import { persistentSplay } from '@algoverse/plugin-persistent-splay';
 import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { directedGraph } from '@algoverse/plugin-directed-graph';
@@ -193,6 +194,7 @@ const panels: readonly Panel[] = [
   drive(persistentTrie, ['build [cat car card dog]', 'insert v0 care'], 'dag'),
   drive(persistentBst, ['build [1 2 3 4 5 6]', 'find v0 6'], 'dag'),
   drive(persistentAvl, ['build [1 2 3]', 'insert v2 4', 'insert v3 5'], 'dag'),
+  drive(persistentRbt, ['build [1 2 3 4 5]', 'insert v0 6', 'erase v1 3'], 'dag'),
   drive(persistentBtree, ['build [1 2 3]', 'insert v0 4', 'insert v1 5'], 'dag'),
   drive(persistentSplay, ['build [1 2 3 4 5]', 'access v0 1', 'access v1 3'], 'dag'),
   drive(persistentBplus, ['build [1 2 3 4 5 6 7 8]', 'range v0 3 7'], 'dag'),

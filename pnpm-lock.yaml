@@ -59,6 +59,9 @@ importers:
       '@algoverse/plugin-persistent-btree':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-btree
+      '@algoverse/plugin-persistent-rbt':
+        specifier: workspace:*
+        version: link:../../packages/plugins/persistent-rbt
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-segment-tree
@@ -164,6 +167,15 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/persistent-rbt:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/persistent-segment-tree:
     dependencies:
       '@algoverse/core':
@@ -244,6 +256,9 @@ importers:
       '@algoverse/plugin-persistent-btree':
         specifier: workspace:*
         version: link:../plugins/persistent-btree
+      '@algoverse/plugin-persistent-rbt':
+        specifier: workspace:*
+        version: link:../plugins/persistent-rbt
       '@algoverse/plugin-persistent-segment-tree':
         specifier: workspace:*
         version: link:../plugins/persistent-segment-tree

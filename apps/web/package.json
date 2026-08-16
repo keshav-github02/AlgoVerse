@@ -18,6 +18,7 @@
     "@algoverse/plugin-persistent-bplus": "workspace:*",
     "@algoverse/plugin-persistent-bst": "workspace:*",
     "@algoverse/plugin-persistent-btree": "workspace:*",
+    "@algoverse/plugin-persistent-rbt": "workspace:*",
     "@algoverse/plugin-persistent-segment-tree": "workspace:*",
     "@algoverse/plugin-persistent-splay": "workspace:*",
     "@algoverse/plugin-persistent-treap": "workspace:*",
