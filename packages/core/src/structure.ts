@@ -37,6 +37,15 @@ export interface StructureNode {
    */
   readonly origin: number;
   /**
+   * Which set this node belongs to - a chain, a component, a partition.
+   *
+   * Distinct from `origin`, and deliberately so. Origin says *when* a node was
+   * allocated; a group says *what it is part of*. They are drawn the same way,
+   * as colour, because no structure needs both at once: a partition is
+   * interesting exactly when there is no history to show.
+   */
+  readonly group?: number;
+  /**
    * Optional reading order along the layout axis. Layout otherwise derives x
    * from a depth-first walk, which assumes the structure's natural order is its
    * traversal order - true for a tree, false for anything indexed.

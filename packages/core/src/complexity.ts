@@ -19,6 +19,8 @@ export interface Growth {
 export const GROWTH_CLASSES: readonly Growth[] = [
   { label: '1', of: () => 1 },
   { label: 'log n', of: (n) => Math.log2(Math.max(2, n)) },
+  // A path decomposed into O(log n) ranges, each searched in O(log n).
+  { label: 'log² n', of: (n) => Math.log2(Math.max(2, n)) ** 2 },
   { label: 'n', of: (n) => n },
   { label: 'n log n', of: (n) => n * Math.log2(Math.max(2, n)) },
   { label: 'n²', of: (n) => n * n },
@@ -56,9 +58,10 @@ export function parseComplexity(declared: string): Growth | null {
   switch (normalised) {
     case '1': return GROWTH_CLASSES[0] as Growth;
     case 'log n': return GROWTH_CLASSES[1] as Growth;
-    case 'n': return GROWTH_CLASSES[2] as Growth;
-    case 'n log n': return GROWTH_CLASSES[3] as Growth;
-    case 'n^2': return GROWTH_CLASSES[4] as Growth;
+    case 'log^2 n': return GROWTH_CLASSES[2] as Growth;
+    case 'n': return GROWTH_CLASSES[3] as Growth;
+    case 'n log n': return GROWTH_CLASSES[4] as Growth;
+    case 'n^2': return GROWTH_CLASSES[5] as Growth;
     default: return null;
   }
 }

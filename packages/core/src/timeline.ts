@@ -28,6 +28,14 @@ export type SimEvent =
       readonly depth?: number;
       readonly slot: string;
       readonly origin: number;
+      /**
+       * Which set this node belongs to, where the plugin has one - a chain, a
+       * component, a partition. Distinct from `origin`, which says *when* a
+       * node was allocated; a group says *what it is part of*. Drawn as
+       * colour, because a partition you cannot see is not a partition you can
+       * reason about.
+       */
+      readonly group?: number;
     }
   | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
   /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
@@ -78,6 +86,7 @@ export interface SceneNode {
   readonly depth?: number;
   readonly slot: string;
   readonly origin: number;
+  readonly group?: number;
   /**
    * Everything this node points at, keyed by slot name.
    *
@@ -117,6 +126,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
         slot: e.slot, origin: e.origin,
         ...(e.values === undefined ? {} : { values: e.values }),
         ...(e.depth === undefined ? {} : { depth: e.depth }),
+        ...(e.group === undefined ? {} : { group: e.group }),
         pointers: new Map(),
       });
       return { ...s, nodes };

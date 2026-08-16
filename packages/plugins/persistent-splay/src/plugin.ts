@@ -519,12 +519,22 @@ export const persistentSplay: AlgorithmPlugin = {
      * probe produced, so the tree keeps the rearrangement - which is the whole
      * point of an amortised bound. One probe would measure the worst case and
      * make the declared complexity look wrong.
+     *
+     * Two things here are load-bearing, and an earlier version got both wrong.
+     *
+     * The count is proportional to n, not capped. An amortised bound says a
+     * sequence of m operations costs O((m + n) log n); with m held at a
+     * constant while n grows, the (n log n)/m term is what is being measured,
+     * and it is not the bound.
+     *
+     * The keys are scattered rather than swept. Splaying a tree in ascending
+     * order is O(1) amortised, not O(log n) - reading a splay tree end to end
+     * is one of the things it is unusually good at - so a sweeping probe
+     * measures a real property, just not the declared one. Stepping by a prime
+     * visits every key exactly once in an order the tree cannot exploit.
      */
-    probes: (n: number): readonly string[] => {
-      const runs = Math.min(n, 48);
-      return Array.from({ length: runs }, (_, i) =>
-        `access v${i} ${Math.floor((i * n) / runs) + 1}`);
-    },
+    probes: (n: number): readonly string[] =>
+      Array.from({ length: 2 * n }, (_, i) => `access v${i} ${((i * 7919) % n) + 1}`),
   },
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

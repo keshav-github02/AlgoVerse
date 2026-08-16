@@ -13,6 +13,7 @@
     "@algoverse/core": "workspace:*",
     "@algoverse/plugin-directed-graph": "workspace:*",
     "@algoverse/plugin-graph": "workspace:*",
+    "@algoverse/plugin-hld": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",
     "@algoverse/plugin-persistent-bit": "workspace:*",
     "@algoverse/plugin-persistent-bplus": "workspace:*",

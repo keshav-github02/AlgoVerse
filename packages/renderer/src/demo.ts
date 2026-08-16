@@ -34,6 +34,7 @@ import { persistentSplay } from '@algoverse/plugin-persistent-splay';
 import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { directedGraph } from '@algoverse/plugin-directed-graph';
 import { graph } from '@algoverse/plugin-graph';
+import { hld } from '@algoverse/plugin-hld';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 
@@ -201,6 +202,7 @@ const panels: readonly Panel[] = [
   drive(graph, ['build [1 2 1 3 2 4 2 5 3 6]', 'bfs 1'], 'force'),
   drive(directedGraph, ['build [1 2 2 3 3 1 3 4 4 5]', 'scc'], 'force'),
   drive(shortestPath, ['build [1 2 4 2 3 1 1 3 9 3 4 2]', 'path 1 4'], 'force'),
+  drive(hld, ['build [1 2 1 3 2 4 2 5 3 6 5 7]', 'path 7 6'], 'dag'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 
