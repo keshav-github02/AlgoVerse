@@ -44,6 +44,12 @@ export type SimEvent =
       readonly pointer?: 'child' | 'link';
       /** What the edge is worth, where that means something. */
       readonly weight?: number;
+      /**
+       * Whether the pointer runs one way only. A tree edge does not need this:
+       * position says which end is the parent. An edge between two vertices
+       * side by side has no such cue, so it has to be drawn.
+       */
+      readonly directed?: boolean;
     }
   | { readonly kind: 'NodeReused'; readonly node: NodeId; readonly by: NodeId }
   | { readonly kind: 'NodeVisited'; readonly node: NodeId }
@@ -61,6 +67,7 @@ export interface ScenePointer {
   readonly to: NodeId;
   readonly kind: 'child' | 'link';
   readonly weight?: number;
+  readonly directed?: boolean;
 }
 
 export interface SceneNode {
@@ -131,6 +138,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
           to: e.to,
           kind: e.pointer ?? 'child',
           ...(e.weight === undefined ? {} : { weight: e.weight }),
+          ...(e.directed === undefined ? {} : { directed: e.directed }),
         });
       }
       const nodes = new Map(s.nodes);

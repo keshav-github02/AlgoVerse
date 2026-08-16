@@ -38,6 +38,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@algoverse/plugin-directed-graph':
+        specifier: workspace:*
+        version: link:../../packages/plugins/directed-graph
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../../packages/plugins/graph
@@ -97,6 +100,15 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/plugins/directed-graph:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
 
   packages/plugins/graph:
     dependencies:
@@ -211,6 +223,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+      '@algoverse/plugin-directed-graph':
+        specifier: workspace:*
+        version: link:../plugins/directed-graph
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../plugins/graph

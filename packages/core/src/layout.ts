@@ -48,6 +48,7 @@ export interface PositionedEdge {
   readonly reused: boolean;
   readonly kind: 'child' | 'link';
   readonly weight?: number;
+  readonly directed?: boolean;
   readonly x1: number;
   readonly y1: number;
   readonly x2: number;
@@ -491,16 +492,31 @@ function finish(
     const b = placed.get(e.to);
     if (a === undefined || b === undefined) continue;
     const kind = e.kind ?? 'child';
-    if (Math.abs(a.y - b.y) < 1) {
-      // Same row: leave from one side and arrive at the other.
-      const rightward = b.x >= a.x;
+    const extra = {
+      ...(e.weight === undefined ? {} : { weight: e.weight }),
+      ...(e.directed === undefined ? {} : { directed: e.directed }),
+    };
+
+    if (kind === 'link') {
+      /**
+       * A link runs straight from one box edge to the other. Hierarchy can
+       * curve because it always goes downward; a link joins two boxes at any
+       * angle, and a curve there points the wrong way at both ends.
+       */
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      if (Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6) continue;
+      const edgeOf = (n: PositionedNode, ox: number, oy: number): readonly [number, number] => {
+        const tx = Math.abs(ox) < 1e-6 ? Infinity : n.width / 2 / Math.abs(ox);
+        const ty = Math.abs(oy) < 1e-6 ? Infinity : n.height / 2 / Math.abs(oy);
+        const t = Math.min(tx, ty);
+        return [n.x + ox * t, n.y + oy * t];
+      };
+      const [sx, sy] = edgeOf(a, dx, dy);
+      const [ex, ey] = edgeOf(b, -dx, -dy);
       edges.push({
-        from: e.from, to: e.to, slot: e.slot, reused: e.reused, kind,
-        ...(e.weight === undefined ? {} : { weight: e.weight }),
-        x1: a.x + (rightward ? a.width / 2 : -a.width / 2),
-        y1: a.y,
-        x2: b.x + (rightward ? -b.width / 2 : b.width / 2),
-        y2: b.y,
+        from: e.from, to: e.to, slot: e.slot, reused: e.reused, kind, ...extra,
+        x1: sx, y1: sy, x2: ex, y2: ey,
       });
       continue;
     }
@@ -511,7 +527,7 @@ function finish(
       slot: e.slot,
       reused: e.reused,
       kind,
-      ...(e.weight === undefined ? {} : { weight: e.weight }),
+      ...extra,
       x1: a.x,
       y1: a.y + (downward ? a.height / 2 : -a.height / 2),
       x2: b.x,

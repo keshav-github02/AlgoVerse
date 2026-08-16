@@ -420,6 +420,34 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### The one thing it did not handle: direction
+
+`StructureEdge` has always run `from` to `to`, so the model knew which way every pointer pointed.
+Nothing drew it. In a tree that is fine - the parent is simply the one higher up, and position says
+everything. Two vertices side by side have no such cue, so `1 -> 2` and `2 -> 1` were the same
+picture.
+
+The fix is one optional field, `directed`, carried the whole way down: `StructureEdge` ->
+`PointerSet` -> `ScenePointer` -> `PositionedEdge`. It goes in the **log**, not only in
+`getStructure()`, for the reason the B+ tree's leaf chain established: the log has to be sufficient
+to draw the picture, or scrubbing backwards shows something the log never said.
+
+Rendering it forced a second change. A hierarchy edge is a bezier that leaves and arrives
+*vertically*, because it always descends - so an arrowhead on one would point straight down no
+matter where the target actually was. Links are now drawn as **straight lines between box
+boundaries**, which is both what a graph conventionally looks like and what makes an arrowhead
+mean something. Hierarchy keeps its curve.
+
+`scc` and `topo` are then the same question from either side. A topological order exists exactly
+when no component holds more than one vertex, and the components that do are the knots blocking it.
+Tarjan is checked against **Kosaraju** - a different route to the same answer, so a slip in
+low-link bookkeeping has nowhere to hide - and separately against mutual reachability computed from
+`reach` alone.
+
+One thing the tests corrected: `topo` first reported the leftover vertices as `inCycles`, which is
+wrong. A vertex *downstream* of a cycle is stuck too, because nothing in the cycle is ever emitted
+to free it. The field is `unplaced`, and it counts everything a cycle can reach.
+
 One check needed loosening rather than the code. `bfs` declares `O(V + E)`, and two variables
 cannot be fitted against one axis - the complexity parser says so deliberately. The measured-cost
 check now reports that as **skipped** rather than failed: there is nothing to agree or disagree

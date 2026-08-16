@@ -12,17 +12,18 @@
   },
   "dependencies": {
     "@algoverse/core": "workspace:*",
-    "@algoverse/plugin-persistent-segment-tree": "workspace:*",
-    "@algoverse/plugin-stack": "workspace:*",
+    "@algoverse/plugin-directed-graph": "workspace:*",
+    "@algoverse/plugin-graph": "workspace:*",
+    "@algoverse/plugin-persistent-avl": "workspace:*",
     "@algoverse/plugin-persistent-bit": "workspace:*",
+    "@algoverse/plugin-persistent-bplus": "workspace:*",
+    "@algoverse/plugin-persistent-bst": "workspace:*",
+    "@algoverse/plugin-persistent-btree": "workspace:*",
+    "@algoverse/plugin-persistent-segment-tree": "workspace:*",
+    "@algoverse/plugin-persistent-splay": "workspace:*",
     "@algoverse/plugin-persistent-treap": "workspace:*",
     "@algoverse/plugin-persistent-trie": "workspace:*",
-    "@algoverse/plugin-persistent-bst": "workspace:*",
-    "@algoverse/plugin-persistent-avl": "workspace:*",
-    "@algoverse/plugin-persistent-btree": "workspace:*",
-    "@algoverse/plugin-persistent-splay": "workspace:*",
-    "@algoverse/plugin-persistent-bplus": "workspace:*",
-    "@algoverse/plugin-graph": "workspace:*",
-    "@algoverse/plugin-shortest-path": "workspace:*"
+    "@algoverse/plugin-shortest-path": "workspace:*",
+    "@algoverse/plugin-stack": "workspace:*"
   }
 }

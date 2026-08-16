@@ -65,6 +65,8 @@ export interface StructureEdge {
   readonly kind?: 'child' | 'link';
   /** What the edge is worth, where that means something. Drawn beside it. */
   readonly weight?: number;
+  /** One-way. Drawn with an arrowhead, because position cannot say it. */
+  readonly directed?: boolean;
 }
 
 export interface StructureGraph {

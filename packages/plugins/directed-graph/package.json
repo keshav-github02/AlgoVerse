@@ -1,0 +1,16 @@
+{
+  "name": "@algoverse/plugin-directed-graph",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "node src/plugin.check.ts"
+  },
+  "dependencies": {
+    "@algoverse/core": "workspace:*",
+    "@algoverse/plugin-sdk": "workspace:*"
+  }
+}

@@ -40,6 +40,7 @@ export function sceneToStructure(scene: SceneState, layoutHint: LayoutHint): Str
         reused: p.kind === 'child' && target.origin < n.origin,
         kind: p.kind,
         ...(p.weight === undefined ? {} : { weight: p.weight }),
+        ...(p.directed === undefined ? {} : { directed: p.directed }),
       });
     }
   }

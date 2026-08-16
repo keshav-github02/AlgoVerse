@@ -66,6 +66,7 @@ body { margin: 0; background: var(--bg); }
 .av-node .av-value { font: 600 16px var(--av-mono); font-variant-numeric: tabular-nums;
   fill: var(--av-text); }
 .av-node .av-label { font: 9.5px var(--av-mono); fill: var(--av-faint); }
+.av-arrows .av-arrow { stroke: none; opacity: .85; }
 .av-weights .av-weight { font: 600 10.5px var(--av-mono); fill: var(--av-text);
   paint-order: stroke; stroke: var(--av-node-bg); stroke-width: 3.5px; stroke-linejoin: round; }
 .av-node.av-highlight rect { stroke-width: 3; }

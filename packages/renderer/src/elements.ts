@@ -65,9 +65,11 @@ export function sceneElements(
 
   const emphasis = options.emphasis;
   const weights: SceneElement[] = [];
+  const arrows: SceneElement[] = [];
   const edges: SceneElement[] = scene.edges.map((e) => {
     const dy = e.y2 - e.y1;
-    const d = Math.abs(dy) < 1
+    // A link is a straight line; hierarchy curves, because it always descends.
+    const d = e.kind === 'link' || Math.abs(dy) < 1
       ? `M${n2(e.x1)},${n2(e.y1)} L${n2(e.x2)},${n2(e.y2)}`
       : `M${n2(e.x1)},${n2(e.y1)} C${n2(e.x1)},${n2(e.y1 + dy * 0.45)} ` +
         `${n2(e.x2)},${n2(e.y2 - dy * 0.45)} ${n2(e.x2)},${n2(e.y2)}`;
@@ -89,6 +91,35 @@ export function sceneElements(
       },
     };
   });
+
+  /**
+   * An arrowhead at the target end, for pointers whose direction position
+   * cannot show. A tree edge needs none: the parent is the one higher up.
+   */
+  for (const e of scene.edges) {
+    if (e.directed !== true) continue;
+    // The curve leaves vertically, so take the tangent the path actually has.
+    const tx = e.kind === 'link' || Math.abs(e.y2 - e.y1) < 1 ? e.x2 - e.x1 : 0;
+    const ty = e.kind === 'link' || Math.abs(e.y2 - e.y1) < 1 ? e.y2 - e.y1 : e.y2 - e.y1;
+    const len = Math.hypot(tx, ty);
+    if (len < 1e-6) continue;
+    const ux = tx / len;
+    const uy = ty / len;
+    const size = 7;
+    // Base of the head, and its two corners across the direction of travel.
+    const bx = e.x2 - ux * size;
+    const by = e.y2 - uy * size;
+    const wing = size * 0.5;
+    arrows.push({
+      tag: 'path',
+      attrs: {
+        className: 'av-arrow',
+        fill: hue(originOf.get(e.to) ?? 0),
+        d: `M${n2(e.x2)},${n2(e.y2)} L${n2(bx - uy * wing)},${n2(by + ux * wing)} ` +
+           `L${n2(bx + uy * wing)},${n2(by - ux * wing)} Z`,
+      },
+    });
+  }
 
   // Weights ride above the edges so a line never crosses its own number.
   for (const e of scene.edges) {
@@ -167,6 +198,7 @@ export function sceneElements(
 
   return [
     { tag: 'g', attrs: { className: 'av-edges' }, children: edges },
+    { tag: 'g', attrs: { className: 'av-arrows' }, children: arrows },
     { tag: 'g', attrs: { className: 'av-weights' }, children: weights },
     { tag: 'g', attrs: { className: 'av-nodes' }, children: nodes },
   ];
