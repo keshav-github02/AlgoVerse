@@ -36,6 +36,14 @@ export type SimEvent =
        * reason about.
        */
       readonly group?: number;
+      /**
+       * Reading order along the layout axis, where the structure has one that
+       * its pointers do not already give. An indexed structure needs it - a
+       * Fenwick cell's place is its index, not where a walk happens to reach
+       * it - and without it in the log the replayed picture is drawn in a
+       * different order from the one the plugin reports.
+       */
+      readonly order?: number;
     }
   | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
   /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
@@ -87,6 +95,7 @@ export interface SceneNode {
   readonly slot: string;
   readonly origin: number;
   readonly group?: number;
+  readonly order?: number;
   /**
    * Everything this node points at, keyed by slot name.
    *
@@ -127,6 +136,7 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
         ...(e.values === undefined ? {} : { values: e.values }),
         ...(e.depth === undefined ? {} : { depth: e.depth }),
         ...(e.group === undefined ? {} : { group: e.group }),
+        ...(e.order === undefined ? {} : { order: e.order }),
         pointers: new Map(),
       });
       return { ...s, nodes };

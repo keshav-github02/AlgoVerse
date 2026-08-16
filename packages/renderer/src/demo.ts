@@ -39,6 +39,7 @@ import { eulerTour } from '@algoverse/plugin-euler-tour';
 import { hld } from '@algoverse/plugin-hld';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
+import { suffixArray } from '@algoverse/plugin-suffix-array';
 
 /**
  * One step is not a picture, it is a membership: which nodes and edges are
@@ -215,6 +216,7 @@ const panels: readonly Panel[] = [
   drive(shortestPath, ['build [1 2 4 2 3 1 1 3 9 3 4 2]', 'path 1 4'], 'force'),
   drive(hld, ['build [1 2 1 3 2 4 2 5 3 6 5 7]', 'path 7 6'], 'dag'),
   drive(eulerTour, ['build [1 2 1 3 2 4 2 5]', 'cut 1 2', 'link 3 4'], 'dag'),
+  drive(suffixArray, ['build banana', 'find ana', 'lrs'], 'linear'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 

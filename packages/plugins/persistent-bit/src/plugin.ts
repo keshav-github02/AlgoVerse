@@ -178,6 +178,8 @@ class Instance implements PluginInstance {
       // One slot per index: versions of the same cell align and fan apart.
       slot: `i${index}`,
       origin,
+      // A cell's place is its index, not where a walk happens to reach it.
+      order: index,
     });
     return cell;
   }

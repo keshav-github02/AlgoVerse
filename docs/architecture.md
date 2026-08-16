@@ -516,6 +516,35 @@ a block whose width is a power of two, so the descent tries the widest blocks
 first and takes each it can afford - **9 cells for 256 entries**. A plain array
 of prefix sums cannot do it at all.
 
+### Suffix array: reading order had to go in the log
+
+The first structure here that is neither a tree nor a graph - just n starting
+positions, sorted. Sorting them is what makes searching cheap: the suffixes
+beginning with a pattern are exactly the ones that sort together, so every
+occurrence is one contiguous block and a search is a binary search that does
+not care how many matches there are.
+
+It is built by prefix doubling, which never compares two suffixes. Ranks from
+one round become the "letters" of the next, so each round accounts for twice
+as much of every suffix and no comparison looks at more than two numbers. The
+LCP array is Kasai's method, and it sits on the **edges** between neighbours
+rather than in a list beside them, because that is what it is - a measurement
+between two suffixes, not a property of either.
+
+Two things it exposed:
+
+- **`order` was never in the event log.** It is on `StructureNode`, ten
+  plugins set it, and none of it could ever be replayed - the drawing rebuilt
+  from the log had no reading order at all. That is the "log must be sufficient
+  to draw the picture" rule being broken repo-wide, and the BIT is the clearest
+  victim: its own docstring says cells must be drawn in index order. `order`
+  now travels with `NodeAllocated`, and the BIT logs it.
+- **A linear layout stacks by depth**, and every suffix claimed depth 0. All
+  six piled onto one point, and every edge between them was then dropped for
+  having no length - which the demo's own union check caught as *5 edges exist
+  at some step but are not in the union layout*. The smallest suffix now takes
+  the largest depth, because a linear layout grows upward from zero.
+
 ### Euler tour: the encoding decided the algorithm
 
 Heavy-light flattens a tree so a *path* is a few ranges, and cannot survive the
