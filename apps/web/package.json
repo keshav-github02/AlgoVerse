@@ -30,6 +30,7 @@
     "@algoverse/plugin-sdk": "workspace:*",
     "@algoverse/plugin-shortest-path": "workspace:*",
     "@algoverse/plugin-stack": "workspace:*",
+    "@algoverse/plugin-suffix-array": "workspace:*",
     "@algoverse/renderer": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

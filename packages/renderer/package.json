@@ -29,6 +29,7 @@
     "@algoverse/plugin-persistent-treap": "workspace:*",
     "@algoverse/plugin-persistent-trie": "workspace:*",
     "@algoverse/plugin-shortest-path": "workspace:*",
-    "@algoverse/plugin-stack": "workspace:*"
+    "@algoverse/plugin-stack": "workspace:*",
+    "@algoverse/plugin-suffix-array": "workspace:*"
   }
 }

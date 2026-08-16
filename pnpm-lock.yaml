@@ -95,6 +95,9 @@ importers:
       '@algoverse/plugin-stack':
         specifier: workspace:*
         version: link:../../packages/plugins/stack
+      '@algoverse/plugin-suffix-array':
+        specifier: workspace:*
+        version: link:../../packages/plugins/suffix-array
       '@algoverse/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -278,6 +281,15 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/suffix-array:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/renderer:
     dependencies:
       '@algoverse/core':
@@ -337,6 +349,9 @@ importers:
       '@algoverse/plugin-stack':
         specifier: workspace:*
         version: link:../plugins/stack
+      '@algoverse/plugin-suffix-array':
+        specifier: workspace:*
+        version: link:../plugins/suffix-array
 
 packages:
 

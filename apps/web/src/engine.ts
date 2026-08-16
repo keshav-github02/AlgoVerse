@@ -35,8 +35,9 @@ import { hld } from '@algoverse/plugin-hld';
 import { liChao } from '@algoverse/plugin-li-chao';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
+import { suffixArray } from '@algoverse/plugin-suffix-array';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, suffixArray, stack];
 
 export interface HistoryEntry {
   readonly line: string;
