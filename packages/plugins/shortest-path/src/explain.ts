@@ -32,7 +32,7 @@ export const explainShortestPath: Explainer = (event: SimEvent, ctx: ExplainCont
           `Finding the route means settling the graph first; the route is read backwards afterwards.`;
       }
       return `Vertex ${value ?? '?'} is read while scanning for the nearest unsettled vertex. ` +
-        `Every scan reads every remaining vertex, which is the whole of the O(V²) — a heap would ` +
+        `Every scan reads every remaining vertex, which is the whole of the O(V²) - a heap would ` +
         `read one.`;
     }
 

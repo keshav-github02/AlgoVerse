@@ -58,8 +58,8 @@ export interface StructureEdge {
    * Whether this pointer is part of the hierarchy.
    *
    * `child` is the default and the only kind that decides depth or ordering.
-   * A `link` is a real pointer that is not a tree edge — a B+ tree's leaf
-   * chain, a threaded tree's successor — and layout must ignore it when
+   * A `link` is a real pointer that is not a tree edge - a B+ tree's leaf
+   * chain, a threaded tree's successor - and layout must ignore it when
    * working out levels, or the structure folds along its own sideways edges.
    */
   readonly kind?: 'child' | 'link';

@@ -328,8 +328,8 @@ unnoticed since the very first plugin.
 | A node holds one value | `StructureNode.value` is a single number. A B-tree node holds several keys and none of them is *the* value | `values?: readonly number[]` alongside it, carried through the event log and drawn by the renderer |
 | Every node is the same width | Layout wrote `o.nodeWidth` onto every node, even though `PositionedNode.width` had been per-node in the type all along | Width follows the text a node shows, for every plugin rather than just this one |
 
-The second is the more interesting mistake. The *type* was right — width was per-node from the
-beginning — and the implementation quietly filled it with a constant. Nothing failed, because until
+The second is the more interesting mistake. The *type* was right - width was per-node from the
+beginning - and the implementation quietly filled it with a constant. Nothing failed, because until
 now every node really did show one short number.
 
 Its search cost also measures lower than the binary trees, at a constant of 0.66 against the AVL's
@@ -348,7 +348,7 @@ and after every operation of a 250-operation property test.
 ### The first read that writes
 
 A splay tree drags whatever you looked up to the root, so `access` is a lookup *and* a
-restructuring. Under persistence that means **a read produces a version** — and the version it read
+restructuring. Under persistence that means **a read produces a version** - and the version it read
 keeps its old shape, which turns an invisible side effect into something you can scrub back to.
 
 The contract already allowed it. `statsDelta` reports `{ versions: 1, queries: 1 }` for the same
@@ -359,12 +359,12 @@ Its benchmark measures **a run of accesses, not one**. Each probe reads the vers
 probe produced, so the rearrangement carries forward. That is the only way an amortised bound can be
 observed: one access on a 64-key spine reads 32 nodes, and the same tree averages 4.6 over 64
 accesses. A single probe would have measured the worst case and declared `O(log n) amortised`
-false. The looser fit that results — R² 0.71 against the AVL's 0.97 — is itself the finding:
+false. The looser fit that results - R² 0.71 against the AVL's 0.97 - is itself the finding:
 amortised is a claim about sequences, and it looks noisier than a guarantee because it is one.
 
 Writing it also produced the sharpest instance yet of the conformance kit's reachability rule.
 Splaying moves a node up **two** levels, and the natural implementation rotates twice over an
-intermediate — which strands that intermediate the moment the second rotation rebuilds it. The first
+intermediate - which strands that intermediate the moment the second rotation rebuilds it. The first
 attempt left 10 of 23 nodes unreachable, the second 2 of 15. Computing each case's final shape in
 one step brought it to zero and cut the same script from 23 nodes to 13.
 
@@ -375,7 +375,7 @@ canvas full of debris, which is exactly why the rule lives in the kit rather tha
 
 A B+ tree keeps its keys in the leaves and chains the leaves together, so a range query descends
 once and then reads sideways. That chain is the first pointer here that does not mean "one level
-down", and layout had assumed every edge did — following one would have staggered the leaves
+down", and layout had assumed every edge did - following one would have staggered the leaves
 downward and scrambled their order.
 
 `StructureEdge.kind` now distinguishes `child` from `link`. Only `child` decides depth or
@@ -384,21 +384,21 @@ rather than top-to-bottom, which was meaningless for a horizontal pointer.
 
 The conformance kit then caught the more interesting mistake. The first version *derived* the chain
 inside `getStructure()` and never logged it, so replay produced a picture with five edges where the
-plugin reported eight — precisely the invariant that check exists to protect. **A pointer the
+plugin reported eight - precisely the invariant that check exists to protect. **A pointer the
 picture shows and the log does not carry is a pointer replay cannot rebuild.** `PointerSet` gained
 a `pointer` field, `SceneNode` gained a `links` map, and the chain became events like anything
 else.
 
 Fixing it surfaced why the chain was tempting to fake. A leaf shared between two versions can have a
 different successor in each, and **a pointer that differs per version cannot live on a shared node**
-— that is what persistence means. A production B+ tree pays for this by copying the predecessor leaf
+- that is what persistence means. A production B+ tree pays for this by copying the predecessor leaf
 and all its ancestors on every split. This plugin instead maintains the chain destructively while
 the tree stays persistent, and says so: scrubbing moves the chain with you, but two versions' chains
 cannot be seen at once.
 
 ### Phase 4 begins, and the placeholder goes
 
-The graph is the first structure with no hierarchy at all — no root, no parent, and no guarantee it
+The graph is the first structure with no hierarchy at all - no root, no parent, and no guarantee it
 is even connected. `force` had been a documented placeholder since layout was written: deterministic
 ring placement with no relaxation, marked "replace before shipping graph algorithms". It is now a
 real Fruchterman-Reingold simulation, and the graph plugin is what proves it.
@@ -413,7 +413,7 @@ It works: on a ten-vertex graph, joined vertices settle **137px** apart and unjo
 
 Three things the contract already handled, which is the more useful signal:
 
-- Graph edges are `kind: 'link'` — neither end is the other's parent — so the machinery added for
+- Graph edges are `kind: 'link'` - neither end is the other's parent - so the machinery added for
   the B+ tree's leaf chain covered them unchanged.
 - A traversal is a read that allocates nothing, so the version machinery simply goes unused.
 - **Every vertex is an entry point.** An unrooted structure has no other honest answer for `roots`,
@@ -421,7 +421,7 @@ Three things the contract already handled, which is the more useful signal:
   might be disconnected.
 
 One check needed loosening rather than the code. `bfs` declares `O(V + E)`, and two variables
-cannot be fitted against one axis — the complexity parser says so deliberately. The measured-cost
+cannot be fitted against one axis - the complexity parser says so deliberately. The measured-cost
 check now reports that as **skipped** rather than failed: there is nothing to agree or disagree
 with, and saying so beats both failing and quietly passing.
 
@@ -431,7 +431,7 @@ Everything before Dijkstra put its information in nodes. A shortest path is deci
 *edges* are worth, and `StructureEdge` had nowhere to put a number.
 
 The fix was not to add one field. `SceneNode` already carried `children` and `links` as two maps
-keyed the same way, and a weight would have made a third — which is the point at which the shape is
+keyed the same way, and a weight would have made a third - which is the point at which the shape is
 wrong rather than merely growing. Both collapsed into one `pointers` map of
 `{ to, kind, weight? }`. Six call sites, and every suite passed unchanged afterwards.
 
@@ -440,14 +440,14 @@ a value the picture shows and the log does not carry is a value replay cannot re
 draws it at the edge midpoint, stroked in the surface colour so a line never crosses its own number.
 
 **Dijkstra selects by scanning, not with a heap, and that is deliberate.** Every vertex the scan
-reads is emitted as a read, so the O(V²) is visible in the cost chart rather than asserted — and the
+reads is emitted as a read, so the O(V²) is visible in the cost chart rather than asserted - and the
 case for a heap is made by the curve. The benchmark stops at 64 vertices because a quadratic scan
 that files an event per read would otherwise log sixteen thousand of them to measure one point.
 
 A negative cost is refused rather than quietly mishandled, with the reason in the hint: Dijkstra
 settles a vertex once and never revisits it, which is exactly what a negative edge would break.
 
-Correctness is checked against **a different algorithm**, not a reimplementation of the same one —
+Correctness is checked against **a different algorithm**, not a reimplementation of the same one -
 repeated relaxation over every edge, which arrives at the same distances by a route that shares no
 code. Twenty-nine graphs, eighty-nine sources. Every route `path` reports is also walked edge by
 edge to confirm it costs what it claims.

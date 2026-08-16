@@ -1,8 +1,8 @@
 /**
  * Persistent B+ tree.
  *
- * Every key lives in a leaf. Internal nodes hold separators only — signposts,
- * not data — which is what lets a range query descend once and then read
+ * Every key lives in a leaf. Internal nodes hold separators only - signposts,
+ * not data - which is what lets a range query descend once and then read
  * straight along the leaves instead of walking back up and down.
  *
  * That leaf chain is the first pointer in this project that is not a tree
@@ -12,7 +12,7 @@
  * The chain is maintained destructively while the tree itself is persistent,
  * and that split is deliberate. A leaf shared between two versions can have a
  * different successor in each, and a pointer that differs per version cannot
- * live on a shared node — that is what persistence *means*. A production B+
+ * live on a shared node - that is what persistence *means*. A production B+
  * tree pays for this by copying the predecessor leaf and all of its ancestors
  * on every split; here the chain is simply re-pointed, and the events that
  * re-point it are in the log like any other change. Scrub back and the chain

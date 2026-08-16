@@ -2,7 +2,7 @@
  * Why each event happened, in graph terms.
  *
  * The thing worth explaining is that depth first and breadth first differ by
- * one line — which end of the pending list you read from — and that every
+ * one line - which end of the pending list you read from - and that every
  * consequence people quote about them follows from just that.
  */
 
@@ -24,7 +24,7 @@ export const explainGraph: Explainer = (event: SimEvent, ctx: ExplainContext): s
 
   switch (event.kind) {
     case 'NodeAllocated':
-      return `Vertex ${event.value} joins the graph. It has no parent and no level — a graph is ` +
+      return `Vertex ${event.value} joins the graph. It has no parent and no level - a graph is ` +
         `only vertices and the edges between them.`;
 
     case 'PointerSet': {

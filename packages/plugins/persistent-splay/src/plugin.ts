@@ -8,7 +8,7 @@
  * Nothing enforces balance. A single access can walk the whole tree; what the
  * splaying buys is that it cannot keep doing so. The bound is amortised over a
  * sequence, which is why the benchmark measures a run of accesses rather than
- * one — a single probe would report the worst case and call the claim false.
+ * one - a single probe would report the worst case and call the claim false.
  */
 
 import {
@@ -224,11 +224,11 @@ class Instance implements PluginInstance {
    *
    * Each case computes the final shape in one step rather than rotating twice
    * over an intermediate. A splay moves the same node up two levels, so
-   * building it after the first rotation would strand it after the second —
+   * building it after the first rotation would strand it after the second -
    * and the whole point of persistence is that nothing is allocated in vain.
    *
-   * The result stays pending, so a caller that takes it apart again — insert
-   * does — never pays for a node it discards.
+   * The result stays pending, so a caller that takes it apart again - insert
+   * does - never pays for a node it discards.
    */
   #splay(id: NodeId | null, key: number, origin: number, events: SimEvent[]): Pending | null {
     if (id === null) return null;
@@ -516,7 +516,7 @@ export const persistentSplay: AlgorithmPlugin = {
       [`build [${Array.from({ length: n }, (_, i) => i + 1).join(' ')}]`],
     /**
      * A run of accesses, not one. Each probe reads the version the previous
-     * probe produced, so the tree keeps the rearrangement — which is the whole
+     * probe produced, so the tree keeps the rearrangement - which is the whole
      * point of an amortised bound. One probe would measure the worst case and
      * make the declared complexity look wrong.
      */

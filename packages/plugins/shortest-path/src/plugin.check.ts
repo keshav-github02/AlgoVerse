@@ -24,7 +24,7 @@ function run(inst: PluginInstance, line: string): { value: unknown; error: Opera
   return r.ok ? { value: r.value, error: null } : { value: null, error: r.error };
 }
 
-/** Shortest distances by repeated relaxation — a different algorithm on purpose. */
+/** Shortest distances by repeated relaxation - a different algorithm on purpose. */
 function bellmanFord(
   vertices: readonly number[],
   edges: readonly [number, number, number][],

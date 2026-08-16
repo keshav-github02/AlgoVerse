@@ -37,7 +37,7 @@ export const explainSplay: Explainer = (event: SimEvent, ctx: ExplainContext): s
           `key is always the shallowest.`;
       }
       if (event.value === target) {
-        return `Key ${event.value} arrives at the root — the place a splay tree puts whatever you ` +
+        return `Key ${event.value} arrives at the root - the place a splay tree puts whatever you ` +
           `last touched, on the bet that you will want it again.`;
       }
       return `Key ${event.value} is rewritten as the rotations carry ${target ?? 'the key'} past ` +
@@ -53,7 +53,7 @@ export const explainSplay: Explainer = (event: SimEvent, ctx: ExplainContext): s
       if (key === null || target === null) return `Walking the path.`;
       if (key === target) return `Found key ${target}. Now it gets rotated up to the root.`;
       return `${target} ${target < key ? 'is below' : 'is above'} ${key}. Nothing here is ` +
-        `balanced — the walk can be long, and splaying is what stops it being long twice.`;
+        `balanced - the walk can be long, and splaying is what stops it being long twice.`;
     }
 
     case 'NodeReused': {
@@ -68,7 +68,7 @@ export const explainSplay: Explainer = (event: SimEvent, ctx: ExplainContext): s
       const rootKey = keyOf(ctx.after, event.roots[0] as NodeId);
       return command === 'access'
         ? `Version ${event.version} is the tree *after reading it*, now rooted at ` +
-          `${rootKey ?? '?'}. A lookup made a new version — v${event.version - 1} still has its ` +
+          `${rootKey ?? '?'}. A lookup made a new version - v${event.version - 1} still has its ` +
           `old shape, which is what makes the rearrangement visible rather than destructive.`
         : `Version ${event.version} is complete, rooted at key ${rootKey ?? '?'}.`;
     }

@@ -2,7 +2,7 @@
  * Undirected graph, with the two traversals everything else is built on.
  *
  * The first structure here with no hierarchy at all. There is no root, no
- * parent, and no guarantee the thing is even connected — which turns out to be
+ * parent, and no guarantee the thing is even connected - which turns out to be
  * the interesting part, because every layout and every check written so far
  * quietly assumed at least one of those.
  *

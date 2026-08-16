@@ -75,7 +75,7 @@ export interface SceneNode {
    * Everything this node points at, keyed by slot name.
    *
    * One map rather than one per property. Children and links began as separate
-   * maps, and adding a weight would have made a third keyed the same way —
+   * maps, and adding a weight would have made a third keyed the same way -
    * which is the point at which the shape is wrong rather than merely growing.
    */
   readonly pointers: ReadonlyMap<string, ScenePointer>;
