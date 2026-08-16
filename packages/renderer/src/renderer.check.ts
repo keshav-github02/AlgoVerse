@@ -105,9 +105,9 @@ check('every node carries its id', (() => {
   return ids.length === scene.nodes.length && new Set(ids).size === ids.length;
 })(), `${scene.nodes.length} nodes, all distinct`);
 
-check('every edge carries a key, and the key is its pointer', (() => {
+check('every edge carries a key naming both of its ends', (() => {
   const keys = [...svg.matchAll(/class="av-edge[^"]*" data-edge="([^"]+)"/g)].map((m) => m[1]);
-  const want = scene.edges.map((e) => `${e.from}:${e.slot}`);
+  const want = scene.edges.map((e) => `${e.from}:${e.slot}:${e.to}`);
   return keys.length === want.length && keys.every((k, i) => k === want[i]);
 })(), `${scene.edges.length} edges`);
 

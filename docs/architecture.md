@@ -420,6 +420,38 @@ Three things the contract already handled, which is the more useful signal:
   and it is what keeps the "every allocated node is reachable" rule meaningful for a graph that
   might be disconnected.
 
+### Euler tour: the encoding decided the algorithm
+
+Heavy-light flattens a tree so a *path* is a few ranges, and cannot survive the
+tree changing shape. This flattens a forest so a *subtree* is one range, and
+exists to be cut apart and rejoined. Both are held as sequences; only this one
+has to splice them.
+
+The first attempt wrote each vertex down once and each edge twice. It is the
+obvious encoding, it makes a tour readable, and **reroot is wrong on it**.
+Rerooting is meant to be a rotation - split the sequence at v and swap the
+halves - but a vertex entry has to sit where the walk first reaches that
+vertex, and rotating changes which edge reaches it first. The old root's entry
+ends up somewhere the walk has already been. Every other operation is built on
+reroot, so the encoding decided the algorithm: entries are **edges only**, and
+a vertex is written down in exactly one case, when it has no edges to stand
+for it. An edge has no position to be wrong about, so the rotation is exact.
+
+Two bugs found by two different checks, both of which had caught something
+before:
+
+- **"the event log describes the structure"** failed with *log yields 0 edges,
+  structure reports 12*. Splitting and joining rearrange the treap constantly
+  and none of it was being logged, so a replay showed a heap of disconnected
+  entries. The same rule that caught the B+ tree's unlogged leaf chain.
+- **"one tour per tree"** reported four. Logging the pointer changes had come
+  with a guard - skip when the pointer is already what it should be - and that
+  guard also skipped restoring the parent link. Merging detaches a subtree
+  before handing it back, so "the pointer already says this" does not mean
+  there is nothing to do: the child had just been orphaned and was about to be
+  adopted by the same node again. The parent is now always restored and only
+  the event is conditional.
+
 ### Colour by group, not only by provenance
 
 A node's colour has always come from `origin` - which generation allocated it.

@@ -34,6 +34,7 @@ import { persistentSplay } from '@algoverse/plugin-persistent-splay';
 import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { directedGraph } from '@algoverse/plugin-directed-graph';
 import { graph } from '@algoverse/plugin-graph';
+import { eulerTour } from '@algoverse/plugin-euler-tour';
 import { hld } from '@algoverse/plugin-hld';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
@@ -83,7 +84,15 @@ function drive(
   }
 
   const playback = new Playback(timeline);
-  const keyOf = (e: { readonly from: NodeId; readonly slot: string }): string => `${e.from}:${e.slot}`;
+  /*
+   * An edge is identified by where it starts, which slot it is, *and* where it
+   * points. Leaving the target out looks like the identity of a pointer and is
+   * not the identity of a line: a slot that is retargeted would then have one
+   * element standing for two different edges, drawn to whichever target the
+   * union happened to end on.
+   */
+  const keyOf = (e: { readonly from: NodeId; readonly slot: string; readonly to: NodeId }): string =>
+    `${e.from}:${e.slot}:${e.to}`;
 
   /**
    * Layout is computed once, over everything that exists at any step, and
@@ -203,6 +212,7 @@ const panels: readonly Panel[] = [
   drive(directedGraph, ['build [1 2 2 3 3 1 3 4 4 5]', 'scc'], 'force'),
   drive(shortestPath, ['build [1 2 4 2 3 1 1 3 9 3 4 2]', 'path 1 4'], 'force'),
   drive(hld, ['build [1 2 1 3 2 4 2 5 3 6 5 7]', 'path 7 6'], 'dag'),
+  drive(eulerTour, ['build [1 2 1 3 2 4 2 5]', 'cut 1 2', 'link 3 4'], 'dag'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 

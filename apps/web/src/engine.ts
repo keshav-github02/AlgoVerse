@@ -29,11 +29,12 @@ import { persistentSplay } from '@algoverse/plugin-persistent-splay';
 import { persistentBplus } from '@algoverse/plugin-persistent-bplus';
 import { directedGraph } from '@algoverse/plugin-directed-graph';
 import { graph } from '@algoverse/plugin-graph';
+import { eulerTour } from '@algoverse/plugin-euler-tour';
 import { hld } from '@algoverse/plugin-hld';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, stack];
 
 export interface HistoryEntry {
   readonly line: string;

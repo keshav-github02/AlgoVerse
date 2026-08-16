@@ -99,7 +99,7 @@ export function sceneElements(
           em === undefined ? '' : `av-em-${em}`,
           off.has(e.from) || off.has(e.to) ? 'av-off' : '',
         ].filter((c) => c !== '').join(' '),
-        'data-edge': `${e.from}:${e.slot}`,
+        'data-edge': `${e.from}:${e.slot}:${e.to}`,
         // Colour by the child's origin: a pointer into older memory reads older.
         stroke: hue(originOf.get(e.to) ?? 0),
         d,
@@ -129,7 +129,7 @@ export function sceneElements(
       tag: 'path',
       attrs: {
         className: off.has(e.from) || off.has(e.to) ? 'av-arrow av-off' : 'av-arrow',
-        'data-edge': `${e.from}:${e.slot}`,
+        'data-edge': `${e.from}:${e.slot}:${e.to}`,
         fill: hue(originOf.get(e.to) ?? 0),
         d: `M${n2(e.x2)},${n2(e.y2)} L${n2(bx - uy * wing)},${n2(by + ux * wing)} ` +
            `L${n2(bx + uy * wing)},${n2(by - ux * wing)} Z`,
@@ -144,7 +144,7 @@ export function sceneElements(
       tag: 'text',
       attrs: {
         className: off.has(e.from) || off.has(e.to) ? 'av-weight av-off' : 'av-weight',
-        'data-edge': `${e.from}:${e.slot}`,
+        'data-edge': `${e.from}:${e.slot}:${e.to}`,
         x: n2((e.x1 + e.x2) / 2),
         y: n2((e.y1 + e.y2) / 2),
         textAnchor: 'middle',

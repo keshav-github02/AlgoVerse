@@ -13,6 +13,7 @@
   "dependencies": {
     "@algoverse/core": "workspace:*",
     "@algoverse/plugin-directed-graph": "workspace:*",
+    "@algoverse/plugin-euler-tour": "workspace:*",
     "@algoverse/plugin-graph": "workspace:*",
     "@algoverse/plugin-hld": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",
