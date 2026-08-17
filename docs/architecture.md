@@ -516,6 +516,40 @@ a block whose width is a power of two, so the descent tries the widest blocks
 first and takes each it can afford - **9 cells for 256 entries**. A plain array
 of prefix sums cannot do it at all.
 
+### Two matchers that check each other
+
+KMP and the Z algorithm are the same fact about a string written from opposite
+ends. A **border** says "this prefix ends the way it begins"; a **Z value** says
+"the beginning happens again here". Either can be converted into the other, and
+that is worth having as a test rather than only as a remark: the Z plugin
+derives borders from its own values, and the property test compares them against
+what KMP computes independently, over 80 random words. Two algorithms written
+from opposite directions agreeing is much stronger evidence than either one
+matching a reference I also wrote.
+
+Each is still checked against its own definition as well - borders by trying
+every prefix-suffix pair, Z values by counting letters - because a shared
+misunderstanding is the only way both could be wrong the same way, and the
+definitions rule that out.
+
+What they measure: KMP's search comes out at **R² 0.9998 with constant 1.98** on
+the input a naive search does worst on, which is the guarantee stated exactly -
+under two reads per letter, never more. The Z pass measures **R² 1.0000**.
+
+Both put their links in the drawing rather than only in a returned array,
+because in both cases the link is the algorithm. KMP's failure link says where a
+mismatch resumes, and following those links from any position enumerates every
+border of that prefix - which is literally what the inner loop does. The Z
+plugin's link says which earlier position an answer was *copied* from, so the
+picture distinguishes the entries that were free from the ones that were paid
+for.
+
+Two of my own expectations were wrong and the tests caught both. `aab` has no
+border at all - it ends in b and begins with a - so `aabaaab`'s border chain is
+just [3]. And in `aaaa` only two of the four Z values come free: position 1
+cannot copy, because there is no interval yet when it is reached, and comparing
+is precisely what *creates* the interval the two after it borrow from.
+
 ### Suffix array: reading order had to go in the log
 
 The first structure here that is neither a tree nor a graph - just n starting

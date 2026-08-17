@@ -32,12 +32,14 @@ import { directedGraph } from '@algoverse/plugin-directed-graph';
 import { graph } from '@algoverse/plugin-graph';
 import { eulerTour } from '@algoverse/plugin-euler-tour';
 import { hld } from '@algoverse/plugin-hld';
+import { kmp } from '@algoverse/plugin-kmp';
 import { liChao } from '@algoverse/plugin-li-chao';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
+import { zAlgorithm } from '@algoverse/plugin-z-algorithm';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, suffixArray, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, suffixArray, liChao, kmp, zAlgorithm, stack];
 
 export interface HistoryEntry {
   readonly line: string;

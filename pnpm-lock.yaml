@@ -53,6 +53,9 @@ importers:
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../../packages/plugins/hld
+      '@algoverse/plugin-kmp':
+        specifier: workspace:*
+        version: link:../../packages/plugins/kmp
       '@algoverse/plugin-li-chao':
         specifier: workspace:*
         version: link:../../packages/plugins/li-chao
@@ -98,6 +101,9 @@ importers:
       '@algoverse/plugin-suffix-array':
         specifier: workspace:*
         version: link:../../packages/plugins/suffix-array
+      '@algoverse/plugin-z-algorithm':
+        specifier: workspace:*
+        version: link:../../packages/plugins/z-algorithm
       '@algoverse/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -156,6 +162,15 @@ importers:
         version: link:../../plugin-sdk
 
   packages/plugins/hld:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/kmp:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -290,6 +305,19 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/z-algorithm:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+    devDependencies:
+      '@algoverse/plugin-kmp':
+        specifier: workspace:*
+        version: link:../kmp
+
   packages/renderer:
     dependencies:
       '@algoverse/core':
@@ -310,6 +338,9 @@ importers:
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../plugins/hld
+      '@algoverse/plugin-kmp':
+        specifier: workspace:*
+        version: link:../plugins/kmp
       '@algoverse/plugin-li-chao':
         specifier: workspace:*
         version: link:../plugins/li-chao
@@ -352,6 +383,9 @@ importers:
       '@algoverse/plugin-suffix-array':
         specifier: workspace:*
         version: link:../plugins/suffix-array
+      '@algoverse/plugin-z-algorithm':
+        specifier: workspace:*
+        version: link:../plugins/z-algorithm
 
 packages:
 
