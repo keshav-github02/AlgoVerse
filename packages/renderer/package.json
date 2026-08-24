@@ -19,6 +19,7 @@
     "@algoverse/plugin-hld": "workspace:*",
     "@algoverse/plugin-kmp": "workspace:*",
     "@algoverse/plugin-li-chao": "workspace:*",
+    "@algoverse/plugin-mst": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",
     "@algoverse/plugin-persistent-bit": "workspace:*",
     "@algoverse/plugin-persistent-bplus": "workspace:*",

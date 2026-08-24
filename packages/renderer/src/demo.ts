@@ -39,6 +39,7 @@ import { eulerTour } from '@algoverse/plugin-euler-tour';
 import { hld } from '@algoverse/plugin-hld';
 import { kmp } from '@algoverse/plugin-kmp';
 import { liChao } from '@algoverse/plugin-li-chao';
+import { mst } from '@algoverse/plugin-mst';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
@@ -223,6 +224,7 @@ const panels: readonly Panel[] = [
   drive(liChao, ['build 0 15', 'add v0 2 0', 'add v1 -1 20', 'add v2 0 8', 'query v3 12'], 'dag'),
   drive(kmp, ['build ababaca', 'search abababacaba'], 'linear'),
   drive(zAlgorithm, ['build aabxaayaab', 'find aab'], 'linear'),
+  drive(mst, ['build [1 2 4 2 3 1 1 3 9 3 4 2]', 'kruskal'], 'force'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),
 ];
 

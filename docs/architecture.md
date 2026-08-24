@@ -516,6 +516,39 @@ a block whose width is a power of two, so the descent tries the widest blocks
 first and takes each it can afford - **9 cells for 256 entries**. A plain array
 of prefix sums cannot do it at all.
 
+### Two greedy strategies that check each other
+
+Prim and Kruskal live in one plugin, which breaks the one-package-per-algorithm
+habit on purpose. They solve the same problem from opposite directions - one
+grows a single tree outward, the other takes cheap edges from anywhere and lets
+the pieces meet - and the fact worth teaching is that they must reach the same
+total. That is a claim to test, not a remark to make, and having both here means
+each tests the other.
+
+Both rest on the **cut property**: split the vertices any way at all, and the
+cheapest edge crossing that split belongs to some minimum spanning tree. Prim
+uses it directly, its split always being reached-against-unreached. Kruskal uses
+it the other way round: an edge whose ends are in different pieces is the
+cheapest across the split separating those pieces, so it is safe.
+
+Agreement is necessary but not sufficient - two greedy algorithms could be
+wrong together. So the property test also enumerates **every** set of n - 1
+edges and finds the cheapest spanning tree by brute force, which is the only
+reference that actually answers "but is greedy really enough". Sixty graphs,
+and in two of them the two strategies chose *different* edges of the same total,
+which is exactly what ties permit and what the test is written to allow.
+
+Prim here is the O(n²) scan rather than a heap version, and it is declared and
+measured as such: **R² 1.0000**. The events count entries examined while
+scanning for the cheapest frontier vertex, which is the work that makes it
+quadratic. Kruskal's O(E log E) has two variables and so is not measured at
+all - the same honest skip the earlier O(V + E) declarations take.
+
+One small contrast worth noting in passing: neither algorithm needs weights to
+be positive, and a check asserts a negative-weight graph works. Dijkstra next
+door refuses one outright, and for a good reason - it never revisits a settled
+vertex. A spanning tree has to span whatever the costs are.
+
 ### Two matchers that check each other
 
 KMP and the Z algorithm are the same fact about a string written from opposite
