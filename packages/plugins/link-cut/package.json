@@ -1,0 +1,17 @@
+{
+  "name": "@algoverse/plugin-link-cut",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "node src/plugin.check.ts"
+  },
+  "dependencies": {
+    "@algoverse/core": "workspace:*",
+    "@algoverse/plugin-sdk": "workspace:*",
+    "@algoverse/plugin-euler-tour": "workspace:*"
+  }
+}

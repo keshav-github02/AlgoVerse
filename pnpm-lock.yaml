@@ -38,6 +38,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@algoverse/plugin-aho-corasick':
+        specifier: workspace:*
+        version: link:../../packages/plugins/aho-corasick
       '@algoverse/plugin-bridges':
         specifier: workspace:*
         version: link:../../packages/plugins/bridges
@@ -62,6 +65,9 @@ importers:
       '@algoverse/plugin-li-chao':
         specifier: workspace:*
         version: link:../../packages/plugins/li-chao
+      '@algoverse/plugin-link-cut':
+        specifier: workspace:*
+        version: link:../../packages/plugins/link-cut
       '@algoverse/plugin-mst':
         specifier: workspace:*
         version: link:../../packages/plugins/mst
@@ -134,6 +140,18 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/plugins/aho-corasick:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-kmp':
+        specifier: workspace:*
+        version: link:../kmp
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/bridges:
     dependencies:
       '@algoverse/core':
@@ -202,6 +220,18 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/link-cut:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-euler-tour':
+        specifier: workspace:*
+        version: link:../euler-tour
       '@algoverse/plugin-sdk':
         specifier: workspace:*
         version: link:../../plugin-sdk
@@ -365,6 +395,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+      '@algoverse/plugin-aho-corasick':
+        specifier: workspace:*
+        version: link:../plugins/aho-corasick
       '@algoverse/plugin-bridges':
         specifier: workspace:*
         version: link:../plugins/bridges
@@ -389,6 +422,9 @@ importers:
       '@algoverse/plugin-li-chao':
         specifier: workspace:*
         version: link:../plugins/li-chao
+      '@algoverse/plugin-link-cut':
+        specifier: workspace:*
+        version: link:../plugins/link-cut
       '@algoverse/plugin-mst':
         specifier: workspace:*
         version: link:../plugins/mst

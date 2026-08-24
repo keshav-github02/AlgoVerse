@@ -37,12 +37,14 @@ import { liChao } from '@algoverse/plugin-li-chao';
 import { mst } from '@algoverse/plugin-mst';
 import { bridges } from '@algoverse/plugin-bridges';
 import { rabinKarp } from '@algoverse/plugin-rabin-karp';
+import { linkCut } from '@algoverse/plugin-link-cut';
+import { ahoCorasick } from '@algoverse/plugin-aho-corasick';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
 import { zAlgorithm } from '@algoverse/plugin-z-algorithm';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, suffixArray, liChao, kmp, zAlgorithm, rabinKarp, mst, bridges, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, linkCut, suffixArray, liChao, kmp, zAlgorithm, rabinKarp, ahoCorasick, mst, bridges, stack];
 
 export interface HistoryEntry {
   readonly line: string;

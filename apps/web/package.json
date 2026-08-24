@@ -19,6 +19,8 @@
     "@algoverse/plugin-kmp": "workspace:*",
     "@algoverse/plugin-li-chao": "workspace:*",
     "@algoverse/plugin-bridges": "workspace:*",
+    "@algoverse/plugin-aho-corasick": "workspace:*",
+    "@algoverse/plugin-link-cut": "workspace:*",
     "@algoverse/plugin-mst": "workspace:*",
     "@algoverse/plugin-rabin-karp": "workspace:*",
     "@algoverse/plugin-persistent-avl": "workspace:*",

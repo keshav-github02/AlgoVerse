@@ -698,6 +698,74 @@ same way, and conformance caught the first attempt: a `NodeReused` event carries
 no value, so the replayed picture kept the old hashes while the live one showed
 the new ones.
 
+### Aho-Corasick: KMP with the pattern replaced by a set
+
+Rabin-Karp's own opening paragraph claims that comparing a single number lets
+one pass hunt for many patterns at once. This is the structure that actually
+delivers it, and it is KMP with one phrase generalised. A failure link points at
+the longest proper suffix of this state's string **that is also a prefix of some
+word**; with one word the only prefixes are its own, so the links form a chain
+and the picture is KMP's; with several they form a tree over a tree.
+
+One consequence is worth stating as a fact about the algorithm rather than about
+the code: the links have to be found **breadth-first**. A node's link is found
+by following its parent's link and taking the same letter, so the parent's link
+must already be known - and the parent is one level up. Depth order is not an
+optimisation here, it is the only order in which the definition can be applied
+at all.
+
+Both link kinds are verified against their definitions, recomputed from the
+published picture rather than from the plugin's own fields: every state's string
+is read back down the trie, and its failure target is compared against trying
+every suffix from the longest down. **60 word sets, 180 searches, 93 of them
+finding more matches than there were words** - which is the case that matters,
+because a word can end inside another. Occurrences are checked against a plain
+scan and against KMP run once per word, which is precisely what this replaces.
+
+### Counting is linear; listing cannot be
+
+A text can contain a quadratic number of occurrences - `[a aa aaa]` over five
+letters of `a` has twelve - and no algorithm can report more matches than it has
+time to write down. Rather than declare one bound and quietly mean the other,
+this splits them into two commands.
+
+`count` keeps a precomputed number per state: how many words end at this state
+or anywhere along its failure chain, which is one addition per state at build
+time. Counting is then **one read per letter** whatever the words are, declared
+`O(n)` and measured at **R² 1.0000, constant 1.33** - the 1.33 being the
+fallbacks, which are amortised away against the letters that caused them.
+`search` lists the occurrences, declared `O(n + z)`, and follows *output* links
+so it steps once per match rather than once per letter of the current string.
+
+The difference is not asserted, it is measured out of the event log: the same
+automaton over the same five letters touches **7 nodes to count and 14 to
+list**, and a check on a text with no matches at all confirms the two costs
+become equal - which is what `O(n + z)` reduces to when z is zero.
+
+### A role has to be known before the node is drawn
+
+Conformance rejected the first version with `node 2 role: log says inner,
+structure says word`. The trie was built by walking each word and allocating
+states as it went, then marking the last state of each word as a word-ending -
+and *ending a word* is part of what a state is. It changes the colour in the
+picture, and the log carries a role on the event that brings a node into being.
+Marking it afterwards meant a node was drawn as one thing and quietly became
+another, which is exactly what the event log cannot express.
+
+The fix is the pattern the stranding bugs kept needing, arrived at for a
+different reason: **shape the structure before drawing any of it.** The trie is
+now built in full, and only then does a second pass emit the allocations, with
+each role already settled. It is the fourth or fifth time this has been the
+answer, and the reason is always the same - the log describes what happened, so
+nothing may happen before there is something true to say about it.
+
+Two checks were also deleted rather than fixed. `build []` is refused by the
+parser, which knows a list parameter cannot be empty, so the plugin's own guard
+was unreachable - and an unreachable guard is worse than none, because nothing
+would notice if it were wrong. The word-limit check had the mirror-image
+problem: it built sixty-five names containing digits, which the parser refused
+first, so it passed without ever reaching the limit it claimed to test.
+
 ### Suffix array: reading order had to go in the log
 
 The first structure here that is neither a tree nor a graph - just n starting
@@ -758,6 +826,104 @@ before:
   there is nothing to do: the child had just been orphaned and was about to be
   adopted by the same node again. The parent is now always restored and only
   the event is conditional.
+
+### Link-cut: drawing what the structure is, not what it means
+
+A link-cut tree is heavy-light made dynamic. Heavy-light cuts a tree into chains
+once, by subtree size, and cannot survive the tree changing shape; this cuts a
+forest into **preferred paths** chosen by what was asked about last, holds each
+in a splay tree keyed by depth, and joins them with path-parent pointers. It is
+the third answer in the repo to "what happens when the tree moves" - heavy-light
+says nothing does, Euler tour tree keeps subtrees and connectivity, and this
+keeps paths.
+
+The design question that took the longest was what to draw. The obvious answer
+is the forest it represents, and it is the wrong one: the represented forest is
+what the structure *means*, and the splay forest is what it *is*. Draw the
+meaning and every rearrangement is invisible, which would leave the most
+interesting thing about the structure - that a query restructures the storage
+without touching the tree - impossible to see. So the picture is the splay
+forest: solid edges are splay children, so a preferred path is a connected
+component of them, and the straight ones are path-parents.
+
+That decision has to be paid for, because a picture of the storage is only
+useful if the tree can be recovered from it. **A check does exactly that.** It
+takes `getStructure()`, walks each splay tree in-order to get its path from
+shallowest to deepest, reads each vertex's parent as the entry before it, takes
+the first entry's parent from the splay root's path-parent, and compares the
+whole forest against a plain parent array - after every operation, in every
+random trial. A drawing that cannot be turned back into the tree it stands for
+is not a drawing of it, however pretty. One check makes the point directly:
+asking about two different vertices in turn changes the drawn edges and leaves
+the recovered forest identical.
+
+Correctness is checked against a parent array with every question answered by
+walking, and connectivity is checked a second time against the **Euler tour
+tree**, which stores the same forest as a sequence and has no notion of a root
+at all. **40 forests, 371 changes - 198 cuts, 76 links, 120 everts.**
+
+### Why nothing in a link-cut node is drawn except its pointers
+
+Every field a link-cut node carries is mutable: subtree aggregates change on
+every rotation, and which preferred path a vertex belongs to changes on every
+access. None of them appear in the picture, and that is not an oversight.
+
+The spine has no event meaning **"this node's field changed"** - only allocate,
+delete, and pointer-set. Every structure before these last two was persistent,
+where a change makes a new node by path copying, or append-only. Rabin-Karp hit
+the same wall a moment earlier and worked around it by re-emitting its
+allocations as a redraw, which is affordable for a whole pattern once but not
+for O(log n) nodes on every single query.
+
+So the aggregates stay internal - `path` reads them at the splay root after an
+access, and a check compares them against adding the path up by hand - and
+preferred paths are shown by the edge structure rather than by `group`, which
+would have to change on every access. The published node is `id`, `label`,
+`value`, `role`, `slot`, and nothing else that can move. Only pointers change,
+and pointers are exactly what the log can say.
+
+This is now the third plugin to want a field update, and the case for adding one
+to the spine is real. It has not been added: it touches the reducer, conformance,
+both renderers and every explainer, and that is a change to argue for before
+making, not one to slip in behind a plugin.
+
+### Evert: a lazy bit that could not be drawn
+
+The textbook link-cut tree reverses a path with a lazy bit on each splay node,
+pushed down as the tree is walked, which makes `evert` cost the same as
+everything else. That bit is exactly the mutable field the log cannot describe -
+and unlike an aggregate, it is not internal bookkeeping: a pending reversal
+means the drawn left and right children are the wrong way round, so the picture
+would show a path running the wrong direction and the in-order reading that
+recovers the forest would produce a reversed tree.
+
+The choice was between a picture that lies and an operation that costs more.
+This reverses the pointers eagerly instead, so `evert` costs the length of the
+path rather than a logarithm, and is **declared `O(n)`** with the reason at the
+call site. Everything else in the structure keeps its bound. It is worth being
+explicit that this is a real limitation and not a subtlety: a link-cut tree with
+a linear `evert` is not the one in the literature.
+
+### A stride is not a random sequence
+
+`path` measured **R² 0.8886** against `O(log n)` at first, and the fit got
+*worse* as the sizes grew - which means the measured cost was growing more
+slowly than a logarithm. The probes were `i * 7919 mod n`, the same trick that
+fixed the splay benchmark, and here it was measuring the wrong thing again in a
+subtler way. Over 2n queries that sequence visits every vertex exactly twice **in
+the same order both times**, and adapting to a repeating access sequence is what
+a splay tree is *for*. The benchmark was measuring static optimality and
+reporting it as the general case.
+
+Pseudo-random positions from a seeded generator give **R² 0.9872**, and the
+measurements rise by about 0.7 per doubling, which is what a logarithm looks
+like. The first attempt at that generator used the usual large multiplier and
+was silently broken: `2^31 * 1103515245` is far past the point where a double is
+exact, so it collapsed to a single value, asked about the same vertex every
+time, and found it already at the root - reporting `path` as costing **zero**
+visits at every size. A benchmark that measures nothing does not look like an
+error, it looks like a fast operation, which is the reason to read the raw
+numbers rather than only the fitted verdict.
 
 ### Colour by group, not only by provenance
 
