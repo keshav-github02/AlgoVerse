@@ -44,6 +44,8 @@ import { bridges } from '@algoverse/plugin-bridges';
 import { rabinKarp } from '@algoverse/plugin-rabin-karp';
 import { linkCut } from '@algoverse/plugin-link-cut';
 import { ahoCorasick } from '@algoverse/plugin-aho-corasick';
+import { suffixAutomaton } from '@algoverse/plugin-suffix-automaton';
+import { waveletTree } from '@algoverse/plugin-wavelet-tree';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
@@ -231,6 +233,8 @@ const panels: readonly Panel[] = [
   drive(zAlgorithm, ['build aabxaayaab', 'find aab'], 'linear'),
   drive(rabinKarp, ['build abcab', 'search abcabcab', 'modulus 97'], 'linear'),
   drive(ahoCorasick, ['build [he she his hers]', 'search ushers'], 'dag'),
+  drive(suffixAutomaton, ['build abcbc', 'occurrences bc', 'repeated'], 'dag'),
+  drive(waveletTree, ['build [3 1 4 1 5 2]', 'kth 1 5 2', 'atmost 0 6 3'], 'dag'),
   drive(mst, ['build [1 2 4 2 3 1 1 3 9 3 4 2]', 'kruskal'], 'force'),
   drive(bridges, ['build [1 2 2 3 3 1 3 4 4 5]', 'bridges', 'cuts'], 'force'),
   drive(stack, ['push 3', 'push 7', 'push 1', 'pop', 'push 9'], 'linear'),

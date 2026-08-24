@@ -516,6 +516,62 @@ a block whose width is a power of two, so the descent tries the widest blocks
 first and takes each it can afford - **9 cells for 256 entries**. A plain array
 of prefix sums cannot do it at all.
 
+### Wavelet tree: splitting by value instead of by position
+
+Every structure here before this one splits a sequence by **position** - a
+segment tree halves the indices and each node summarises a contiguous block.
+This halves the **values**. The root holds the whole sequence, its children hold
+the elements falling in the lower and upper half of the value range, and so on
+down to a leaf per distinct value.
+
+The whole thing rests on each split keeping the elements in their original
+relative order. Because it does, a block of positions at a node is a block of
+positions at each child, and the map between them is a count: of the first `k`
+elements here, how many went left? So `kth` - the third smallest thing in
+positions 4 to 9 - is one descent. That is a question no segment tree can answer
+at all, because it is not a question about a summary of a block; it is a question
+about *which values* are present.
+
+The cost is the depth, which is the logarithm of the **value range** and has
+nothing to do with the length of the position range. Declaring `O(log n)` is
+therefore only honest when the two coincide, so the benchmark draws n values
+from 1..n to make them coincide, and says so at the call site. It measures **R²
+0.9772, constant 1.14**.
+
+The central check reads the tree off `getStructure()` and verifies the one claim
+everything rests on: a child's subsequence is exactly its parent's elements for
+that half of the value range, **in the same relative order**. Order is the part
+worth checking, because if it were lost every answer would still be a plausible
+number and all of them would be wrong. **60 sequences, 360 ranges, the deepest
+tree eight levels.** Answers go against sorting the slice, which is what `kth`
+means, and `atmost` and `kth` are checked against each other as well - neither is
+derived from the other here.
+
+### A tempting invariant that is false
+
+The first version of that check asserted that **every level holds the whole
+sequence**, which reads like the definition of the structure and is wrong. A leaf
+stops: once an element reaches the leaf for its value it is not written again
+further down, and leaves sit at different depths whenever the value range does
+not halve evenly. For `1..9` the levels hold 8, 8, 8, 8 and then **3** - the two
+1s and the 2, whose leaves are the only ones at the bottom.
+
+The true invariants are weaker and more useful: the top level holds everything,
+no level holds more than the one above it, and the leaves between them hold
+everything exactly once. A second check builds a sequence over `0..7`, where the
+range does halve evenly, every leaf sits at one depth, and every level *does*
+hold the whole sequence - so the two checks together say what the structure
+guarantees and what it merely happens to do when the numbers are convenient.
+
+No cross-plugin check was available for this one, and it is worth saying why
+rather than leaving the absence unexplained. The alternative structures for
+range-kth are a merge sort tree, which is the last thing on the roadmap, and a
+persistent segment tree over the value domain queried as the *difference* of two
+versions - and the segment tree plugin's `kth` descends within one version, not
+across two. So the references here are the definition and the structure's own
+published invariants, and the merge sort tree will be able to check against this
+when it arrives.
+
 ### Two greedy strategies that check each other
 
 Prim and Kruskal live in one plugin, which breaks the one-package-per-algorithm
@@ -765,6 +821,45 @@ was unreachable - and an unreachable guard is worse than none, because nothing
 would notice if it were wrong. The word-limit check had the mirror-image
 problem: it built sixty-five names containing digits, which the parser refused
 first, so it passed without ever reaching the limit it claimed to test.
+
+### Suffix automaton: a picture that can be asked a question
+
+The suffix array holds every suffix in sorted order; this holds every
+**substring** at once, as the smallest automaton that accepts exactly them,
+built one letter at a time without ever looking back. It stays small because two
+substrings that always end at the same set of positions are indistinguishable
+from then on - whatever can follow one can follow the other - so a state is one
+of those classes, and there are fewer than 2n of them however long the word is.
+
+Because a state stands for a run of strings whose lengths fill the range from
+`len(link) + 1` to `len`, the number of distinct substrings is a **sum of class
+widths** and needs no enumeration at all. The same shape answers two more
+questions for free: occurrences are one number per class, gathered by adding
+each class's count into its suffix link longest-first; and the longest repeated
+substring is just the longest string of the deepest class occurring twice,
+compared against nothing.
+
+The verification here is the strongest in the repo so far, because the drawing
+itself can be **executed**. A check reads the transitions off `getStructure()`,
+walks every path from the start state, and compares the set of strings the
+picture accepts against every substring enumerated by hand. A second one adds up
+`len - len(link)` across the published graph and compares that to the same
+count. So the picture is not merely consistent with the answer - it *is* the
+answer, and a drawing that accepted one string too many would be caught by the
+first check even if every reported number were right.
+
+Then the two hard numbers - the distinct-substring count and the length of the
+longest repeat - are checked against the **suffix array** plugin, which derives
+both by sorting suffixes and measuring shared prefixes between neighbours.
+Nothing about the two derivations resembles the other. **60 words, 240 queries,
+139 splits along the way**, and a check asserts that the splits happened, since
+a word with no repeated substring never splits at all and would exercise none of
+the interesting code.
+
+`build` declares `O(n)` and measures **R² 0.9996, constant 3.78** - and the
+probe is a pseudo-random word over two letters rather than a repeated letter,
+because `aaaa` needs no splits and would have measured the easy case as though
+it were the general one.
 
 ### Suffix array: reading order had to go in the log
 

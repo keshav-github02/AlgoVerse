@@ -116,6 +116,12 @@ importers:
       '@algoverse/plugin-suffix-array':
         specifier: workspace:*
         version: link:../../packages/plugins/suffix-array
+      '@algoverse/plugin-suffix-automaton':
+        specifier: workspace:*
+        version: link:../../packages/plugins/suffix-automaton
+      '@algoverse/plugin-wavelet-tree':
+        specifier: workspace:*
+        version: link:../../packages/plugins/wavelet-tree
       '@algoverse/plugin-z-algorithm':
         specifier: workspace:*
         version: link:../../packages/plugins/z-algorithm
@@ -377,6 +383,27 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/suffix-automaton:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+      '@algoverse/plugin-suffix-array':
+        specifier: workspace:*
+        version: link:../suffix-array
+
+  packages/plugins/wavelet-tree:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
   packages/plugins/z-algorithm:
     dependencies:
       '@algoverse/core':
@@ -470,6 +497,12 @@ importers:
       '@algoverse/plugin-suffix-array':
         specifier: workspace:*
         version: link:../plugins/suffix-array
+      '@algoverse/plugin-suffix-automaton':
+        specifier: workspace:*
+        version: link:../plugins/suffix-automaton
+      '@algoverse/plugin-wavelet-tree':
+        specifier: workspace:*
+        version: link:../plugins/wavelet-tree
       '@algoverse/plugin-z-algorithm':
         specifier: workspace:*
         version: link:../plugins/z-algorithm
