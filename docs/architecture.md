@@ -549,6 +549,64 @@ be positive, and a check asserts a negative-weight graph works. Dijkstra next
 door refuses one outright, and for a good reason - it never revisits a settled
 vertex. A spanning tree has to span whatever the costs are.
 
+### Bridges and cut vertices: one walk, two answers, one equals sign
+
+Both answers fall out of the same depth-first walk, and the entire difference
+between them is a comparison. For a child `c` of `v`, the walk records how far
+back `c`'s subtree can climb: if it cannot get back past `v` at all, the edge
+`v-c` is a **bridge**; if it cannot get back past `v` *itself*, `v` is a **cut
+vertex**. That is `low[c] > disc[v]` against `low[c] >= disc[v]` - strictly
+above `v` versus no higher than `v`. Getting back to `v` and no further saves
+the edge, because a cycle runs through it, but does not save the vertex,
+because the cycle runs through `v`.
+
+The clearest picture of the gap is two triangles sharing a single vertex: **no
+edge is a bridge** and **that vertex is a cut vertex**. A check asserts exactly
+that, because it is the one case where a plausible implementation with the
+wrong comparison still passes every other test.
+
+The root of the walk is the exception and needs its own rule: it has no parent
+to be separated from, so it is a cut vertex when it has **two or more children
+in the walk tree**, not when a low-link says so. A star centred on vertex 2 with
+the walk starting at vertex 1 pins this down - 1 has one branch and must not be
+reported, 2 has two and must be.
+
+Verification is the definition applied literally: take the thing away and count
+the pieces by breadth-first search. Quadratic, impossible to misread, and the
+only reference worth having for a one-pass trick. **67 random graphs, 7 of them
+already in more than one piece**, because a bridge finder that quietly assumes
+connectivity is a bridge finder that is wrong on real input. The property test
+also asserts a relation *between* the two answers - a bridge's endpoint is a cut
+vertex unless it has nothing else attached - which neither answer alone could
+establish.
+
+Repeated pairs are refused rather than tolerated, and the hint says why: the
+walk skips the parent **by vertex**, not by edge, so a second edge between the
+same pair would be invisible to it and the first would be reported as a bridge
+it is not. That is a real limitation of this implementation, so it is stated at
+the boundary instead of being silently mishandled inside.
+
+### An undirected edge has one identity
+
+The conformance check "event log describes the structure" failed here on
+`edge 0-e3->2 is in the structure but not the log`. Neither the algorithm nor
+the structure was wrong. `build [1 2 2 3 3 1 ...]` was logging the edge `3 1`
+as a pointer from 3 to 1, in the order it was typed, while `getStructure`
+normalised every edge to low-to-high and reported the same edge as 1 to 3. Two
+names for one thing, so a replay of the log grew an edge the live structure
+does not have.
+
+This is the same rule as the treap pointers and the missing reading order, in a
+form none of those took: **the log must be sufficient to draw the picture**
+extends to naming things the way the picture names them. For a directed graph
+the typed order *is* the identity and there is nothing to normalise; for an
+undirected one it is an accident of input, and the log has to say which of the
+two possible names it means. The fix was one canonical form in both places.
+Worth noting that every hand-written expectation and the whole brute-force
+property test passed while this was broken - only conformance, which compares
+the log against the structure rather than either against arithmetic, could see
+it.
+
 ### Two matchers that check each other
 
 KMP and the Z algorithm are the same fact about a string written from opposite
@@ -582,6 +640,63 @@ border at all - it ends in b and begins with a - so `aabaaab`'s border chain is
 just [3]. And in `aaaa` only two of the four Z values come free: position 1
 cannot copy, because there is no interval yet when it is reached, and comparing
 is precisely what *creates* the interval the two after it borrow from.
+
+### Rabin-Karp: the matcher that can be wrong
+
+KMP and the Z algorithm compare letters, so when they report a match there is
+one. This is the first plugin here whose comparison is *evidence* rather than
+proof - it compares a number, and numbers collide. The interesting design
+question is therefore not how to make collisions rare but where to put the
+consequence of one, and the answer is that **every hash hit is verified letter
+by letter** before it is reported.
+
+That makes the modulus a command rather than a constant. `modulus 1` makes every
+hash collide, which turns the algorithm into the naive scan it is meant to
+replace - and two checks pin down the pair of claims that matters: the reported
+positions are **identical** under a hopeless modulus and a good one, while the
+comparison count is not. The answer never depends on the hash; only the cost
+does. A hash function is an optimisation, and a check that only ever runs with a
+good modulus would never find out whether the code believed that.
+
+Verification is checked three ways at once. The rolled window hash is compared
+against the hash computed from scratch, which is the definition the roll claims
+to equal; the positions are compared against a plain scan; and they are compared
+against **both** exact matchers already in the repo. Four independent opinions
+about the same question, over 240 searches, 55 of which had a hash lie to them.
+
+The one bug in this algorithm that produces plausible wrong answers rather than
+a crash is the sign of the intermediate. Removing the leaving letter can take
+the running value negative, and a remainder of a negative number is negative in
+this language, so the hash quietly stops matching itself. A check runs the roll
+under modulus 101 over letters near the top of the alphabet, where that happens
+on nearly every step, and asserts every hash is both correct and non-negative.
+
+### Zero is the point, and a benchmark cannot measure it
+
+The benchmark had to be changed, and the reason is a genuine limit on what the
+event log observes. Cost here is counted in nodes touched. Run the pattern
+`aaab` over a long run of `a` - the pair KMP is measured on - and with a large
+modulus no window ever collides, so Rabin-Karp touches the pattern **zero**
+times at every size. That is precisely its advantage: KMP touches the pattern
+once per letter of text, and this touches it never.
+
+But a flat zero is not a growth curve. Using it as the benchmark would have
+measured nothing and reported the result as constant time, which is the same
+dishonesty the heavy-light benchmarks were caught in earlier. So the zero is
+asserted as a **check** - where a claim about a specific case belongs - and the
+benchmark measures a text where the pattern occurs every second position, so
+verification work genuinely scales: `2 * (n / 2) = n` comparisons, measured as
+**O(n)**. The declared `O(n + m)` has two variables and so is skipped by the
+complexity check, the same honest skip the graph plugins take.
+
+The other thing this plugin needed was a redraw. Changing the modulus changes
+every number in the picture, and the spine has no event meaning "this node's
+value is different now" - every structure before this one was persistent or
+append-only, so a value never changed in place. Re-emitting the allocations is
+what the spine already means by a redraw, since `build` after `build` works the
+same way, and conformance caught the first attempt: a `NodeReused` event carries
+no value, so the replayed picture kept the old hashes while the live one showed
+the new ones.
 
 ### Suffix array: reading order had to go in the log
 

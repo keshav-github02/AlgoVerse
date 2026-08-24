@@ -38,6 +38,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@algoverse/plugin-bridges':
+        specifier: workspace:*
+        version: link:../../packages/plugins/bridges
       '@algoverse/plugin-directed-graph':
         specifier: workspace:*
         version: link:../../packages/plugins/directed-graph
@@ -92,6 +95,9 @@ importers:
       '@algoverse/plugin-persistent-trie':
         specifier: workspace:*
         version: link:../../packages/plugins/persistent-trie
+      '@algoverse/plugin-rabin-karp':
+        specifier: workspace:*
+        version: link:../../packages/plugins/rabin-karp
       '@algoverse/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -127,6 +133,15 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/plugins/bridges:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
 
   packages/plugins/directed-graph:
     dependencies:
@@ -290,6 +305,21 @@ importers:
         specifier: workspace:*
         version: link:../../plugin-sdk
 
+  packages/plugins/rabin-karp:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-kmp':
+        specifier: workspace:*
+        version: link:../kmp
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+      '@algoverse/plugin-z-algorithm':
+        specifier: workspace:*
+        version: link:../z-algorithm
+
   packages/plugins/shortest-path:
     dependencies:
       '@algoverse/core':
@@ -335,6 +365,9 @@ importers:
       '@algoverse/core':
         specifier: workspace:*
         version: link:../core
+      '@algoverse/plugin-bridges':
+        specifier: workspace:*
+        version: link:../plugins/bridges
       '@algoverse/plugin-directed-graph':
         specifier: workspace:*
         version: link:../plugins/directed-graph
@@ -389,6 +422,9 @@ importers:
       '@algoverse/plugin-persistent-trie':
         specifier: workspace:*
         version: link:../plugins/persistent-trie
+      '@algoverse/plugin-rabin-karp':
+        specifier: workspace:*
+        version: link:../plugins/rabin-karp
       '@algoverse/plugin-shortest-path':
         specifier: workspace:*
         version: link:../plugins/shortest-path
