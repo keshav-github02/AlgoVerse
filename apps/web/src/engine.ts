@@ -41,12 +41,14 @@ import { linkCut } from '@algoverse/plugin-link-cut';
 import { ahoCorasick } from '@algoverse/plugin-aho-corasick';
 import { suffixAutomaton } from '@algoverse/plugin-suffix-automaton';
 import { waveletTree } from '@algoverse/plugin-wavelet-tree';
+import { mergeSortTree } from '@algoverse/plugin-merge-sort-tree';
+import { suffixTree } from '@algoverse/plugin-suffix-tree';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
 import { zAlgorithm } from '@algoverse/plugin-z-algorithm';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, linkCut, waveletTree, suffixArray, suffixAutomaton, liChao, kmp, zAlgorithm, rabinKarp, ahoCorasick, mst, bridges, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, linkCut, waveletTree, mergeSortTree, suffixArray, suffixAutomaton, suffixTree, liChao, kmp, zAlgorithm, rabinKarp, ahoCorasick, mst, bridges, stack];
 
 export interface HistoryEntry {
   readonly line: string;

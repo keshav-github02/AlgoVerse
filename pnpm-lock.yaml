@@ -68,6 +68,9 @@ importers:
       '@algoverse/plugin-link-cut':
         specifier: workspace:*
         version: link:../../packages/plugins/link-cut
+      '@algoverse/plugin-merge-sort-tree':
+        specifier: workspace:*
+        version: link:../../packages/plugins/merge-sort-tree
       '@algoverse/plugin-mst':
         specifier: workspace:*
         version: link:../../packages/plugins/mst
@@ -119,6 +122,9 @@ importers:
       '@algoverse/plugin-suffix-automaton':
         specifier: workspace:*
         version: link:../../packages/plugins/suffix-automaton
+      '@algoverse/plugin-suffix-tree':
+        specifier: workspace:*
+        version: link:../../packages/plugins/suffix-tree
       '@algoverse/plugin-wavelet-tree':
         specifier: workspace:*
         version: link:../../packages/plugins/wavelet-tree
@@ -241,6 +247,18 @@ importers:
       '@algoverse/plugin-sdk':
         specifier: workspace:*
         version: link:../../plugin-sdk
+
+  packages/plugins/merge-sort-tree:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+      '@algoverse/plugin-wavelet-tree':
+        specifier: workspace:*
+        version: link:../wavelet-tree
 
   packages/plugins/mst:
     dependencies:
@@ -395,6 +413,21 @@ importers:
         specifier: workspace:*
         version: link:../suffix-array
 
+  packages/plugins/suffix-tree:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+      '@algoverse/plugin-suffix-array':
+        specifier: workspace:*
+        version: link:../suffix-array
+      '@algoverse/plugin-suffix-automaton':
+        specifier: workspace:*
+        version: link:../suffix-automaton
+
   packages/plugins/wavelet-tree:
     dependencies:
       '@algoverse/core':
@@ -452,6 +485,9 @@ importers:
       '@algoverse/plugin-link-cut':
         specifier: workspace:*
         version: link:../plugins/link-cut
+      '@algoverse/plugin-merge-sort-tree':
+        specifier: workspace:*
+        version: link:../plugins/merge-sort-tree
       '@algoverse/plugin-mst':
         specifier: workspace:*
         version: link:../plugins/mst
@@ -500,6 +536,9 @@ importers:
       '@algoverse/plugin-suffix-automaton':
         specifier: workspace:*
         version: link:../plugins/suffix-automaton
+      '@algoverse/plugin-suffix-tree':
+        specifier: workspace:*
+        version: link:../plugins/suffix-tree
       '@algoverse/plugin-wavelet-tree':
         specifier: workspace:*
         version: link:../plugins/wavelet-tree

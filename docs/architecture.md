@@ -572,6 +572,89 @@ across two. So the references here are the definition and the structure's own
 published invariants, and the merge sort tree will be able to check against this
 when it arrives.
 
+### Merge sort tree: where the second logarithm comes from
+
+A segment tree whose nodes hold their block **sorted** rather than summarised.
+Building it is a merge sort that keeps every intermediate run instead of
+discarding it, which is the whole idea - the work a merge sort does is already a
+hierarchy of sorted runs, and hanging on to them turns a sort into an index.
+
+It answers exactly what the wavelet tree answers, and pays a logarithm more for
+it, and that is why it is worth having beside it. A range decomposes into
+O(log n) whole nodes, and inside each of those a sorted list has to be
+**bisected**, because a node knows the order of its values and nothing else. So
+`atmost` is `O(log² n)`, measured at **R² 0.9942** - the first measured `log² n`
+in the repo. `kth` is worse: a binary search over the value range with a whole
+counting query inside it, three logarithms where the wavelet tree spends one.
+On the same worked example, `kth` takes **12 steps here and 4 in the wavelet
+tree**, and a check asserts that gap rather than merely mentioning it.
+
+Making that measurement honest required a decision about what a `NodeVisited`
+means. Counting only the nodes *entered* would have reported this structure as
+costing the same as the wavelet tree, which is precisely the thing the two exist
+to distinguish - so each comparison inside a node's bisection is logged as a
+visit to that node, because each one is the node being consulted. Without it the
+declaration and the measurement would have disagreed, and the disagreement would
+have been the log's fault rather than the algorithm's.
+
+Every answer is checked twice: against sorting the slice, and against the
+wavelet tree over the same sequence. The two commands take the same arguments in
+the same order deliberately, so the cross-check compares identical command
+strings rather than a translation that could itself be wrong. **50 sequences,
+300 ranges, two structures.** That closes the gap the wavelet tree's own notes
+left open.
+
+### Suffix tree: three structures, one word, one answer
+
+The last of three ways this repo holds every substring. The suffix array sorts
+the suffixes, the suffix automaton merges the positions that behave alike, and
+this is the compressed trie of the suffixes - the oldest and most direct of the
+three. Ukkonen's construction is worth having for three ideas that are not about
+trees at all: a leaf's edge is left **open**, so the shared end is one number
+rather than n assignments; the **active point** is carried from step to step
+rather than searched for; and a **suffix link** turns "now insert the next
+shorter suffix" into one pointer hop.
+
+The verification is the widest in the repo. The drawn tree is checked against
+the definition of a compressed suffix trie on three counts, all read off
+`getStructure()`: the root-to-leaf paths spell exactly the suffixes of the word
+with its terminator, every branching node really has two children (or the edge
+above it should have been part of the one below), and no two edges from a node
+begin with the same character. The **suffix links** are checked against their own
+definition too - drop the first character of a node's path and that is where its
+link must land. Then the substring count and the longest repeat are compared
+against **both** neighbours, with enumeration as referee: three structures, four
+opinions, one number. **60 words, 240 queries, 240 branching nodes built.**
+
+### What could not be logged, and saying so
+
+The picture here is the **finished** tree, not the construction, and that is a
+limitation rather than a preference. Every leaf's edge runs to the current end of
+the input, so a faithful step-by-step log would rewrite every leaf on every
+character - n events per step, for an algorithm whose entire claim is n events in
+total. There was a choice between logging something that is not what happened
+and logging the result.
+
+Three ways out were considered and rejected. Labelling leaves with the suffix
+they will eventually hold shows text that has not been read yet. Publishing each
+node's path instead of its edge label fixes the splits, since a split only
+inserts a node above an existing one and leaves its path alone - but a leaf's
+path grows on every character, so it moves the problem rather than solving it.
+Redrawing the affected nodes, which is how Rabin-Karp handles a change of
+modulus, is affordable for one node and not for every leaf every step.
+
+So the build draws the tree it arrived at and reports the *shape* of the
+construction as numbers - phases, splits, suffix links made - while queries are
+logged step by step like everything else. `repeated` rather than `build` is the
+benchmarked command for the same reason: a construction that emits no traversal
+events would measure as costing nothing, which is the trap the Rabin-Karp
+benchmark fell into earlier. It measures **R² 1.0000**.
+
+This is the fourth structure to want an event the spine does not have, and the
+first where no workaround is available. The case for a field-update event is now
+made by four independent plugins; it still has not been added, because it touches
+the reducer, conformance, both renderers and every explainer.
+
 ### Two greedy strategies that check each other
 
 Prim and Kruskal live in one plugin, which breaks the one-package-per-algorithm
