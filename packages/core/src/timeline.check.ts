@@ -139,5 +139,61 @@ const naiveCost = 3 * (2 * ARR.length - 1);
 check('memory is shared, not copied', stored === 23,
   `${stored} nodes vs ${naiveCost} naive (${Math.round((1 - stored / naiveCost) * 100)}% saved)`);
 
+/* -- 6. Updating a node's fields without unmaking it -------------- */
+
+console.log('');
+console.log('updating fields in place');
+
+const updated = ((): SceneState => {
+  const line: SimEvent[] = [
+    { kind: 'NodeAllocated', node: 0 as NodeId, value: 1, label: 'a', role: 'branch', slot: 's', origin: 0 },
+    { kind: 'NodeAllocated', node: 1 as NodeId, value: 2, label: 'b', role: 'leaf', slot: 's', origin: 0 },
+    { kind: 'PointerSet', from: 0 as NodeId, slot: 'left', to: 1 as NodeId },
+    { kind: 'NodeUpdated', node: 0 as NodeId, label: 'ab', value: 7 },
+  ];
+  return line.reduce(reduce, EMPTY_SCENE);
+})();
+
+check('an update changes the fields it names', (() => {
+  const n = updated.nodes.get(0 as NodeId);
+  return n?.label === 'ab' && n.value === 7;
+})());
+
+check('and leaves the ones it does not', (() => {
+  // The whole reason this is not a second NodeAllocated.
+  const n = updated.nodes.get(0 as NodeId);
+  return n?.role === 'branch' && n.slot === 's' && n.origin === 0;
+})());
+
+check('and keeps every pointer', (() => {
+  /*
+   * Allocating the node again would have cleared this, which is what made the
+   * event necessary: a suffix tree splitting an edge changes what the surviving
+   * half spells while its children stay exactly where they were.
+   */
+  const n = updated.nodes.get(0 as NodeId);
+  return n?.pointers.get('left')?.to === (1 as NodeId);
+})(), 'left still points at node 1');
+
+check('updating a node that is not there is ignored, not fatal', (() => {
+  // Replaying part of a log has to be possible, so an update to something the
+  // prefix has not allocated is a no-op - the same as deleting it.
+  const after = reduce(updated, { kind: 'NodeUpdated', node: 9 as NodeId, label: 'x' });
+  return after.nodes.size === updated.nodes.size && !after.nodes.has(9 as NodeId);
+})());
+
+check('an update folds like any other event, so scrubbing sees it', (() => {
+  const line: SimEvent[] = [
+    { kind: 'NodeAllocated', node: 0 as NodeId, value: 1, label: 'a', role: 'r', slot: 's', origin: 0 },
+    { kind: 'NodeUpdated', node: 0 as NodeId, label: 'b' },
+    { kind: 'NodeUpdated', node: 0 as NodeId, label: 'c' },
+  ];
+  const t = new Timeline();
+  t.append(line);
+  return t.stateAt(1).nodes.get(0 as NodeId)?.label === 'a'
+    && t.stateAt(2).nodes.get(0 as NodeId)?.label === 'b'
+    && t.stateAt(3).nodes.get(0 as NodeId)?.label === 'c';
+})(), 'rewinding an update puts the old label back');
+
 console.log(`\n${failures === 0 ? 'all checks passed' : `${failures} FAILED`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

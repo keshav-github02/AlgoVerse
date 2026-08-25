@@ -8,7 +8,7 @@
 
 import {
   createRng, help, parseCommand,
-  type NodeId, type OperationError, type StructureGraph,
+  type NodeId, type OperationError, type SimEvent, type StructureGraph,
 } from '@algoverse/core';
 import { runConformance, type PluginInstance } from '@algoverse/plugin-sdk';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
@@ -32,6 +32,17 @@ function run(inst: PluginInstance, line: string): { value: unknown; error: Opera
 
 const at = (r: { value: unknown }, key: string): unknown =>
   (r.value as Record<string, unknown> | null)?.[key];
+
+/** The events an operation actually emitted, so the log can be examined. */
+function eventsOf(inst: PluginInstance, line: string): readonly SimEvent[] {
+  const parsed = parseCommand(line, plugin.commands);
+  if (!parsed.ok) return [];
+  const r = inst.execute(parsed.command);
+  return r.ok ? r.events : [];
+}
+
+const countKind = (events: readonly SimEvent[], kind: SimEvent['kind']): number =>
+  events.filter((e) => e.kind === kind).length;
 
 /* ── The definitions ───────────────────────────────────────────────── */
 
@@ -335,6 +346,76 @@ check('the tree and the automaton count occurrences alike', (() => {
   }
   return true;
 })(), 'seven substrings of mississippi');
+
+/* ── 4b. The construction is in the log, and the log is linear ─────── */
+
+console.log('');
+console.log('the log of the construction');
+
+check('the construction is stepped through rather than drawn at the end', (() => {
+  /*
+   * The events have to show the algorithm running, not just its result. A walk
+   * back through suffixes is `NodeVisited`; a split rewrites what the surviving
+   * half spells and closing the leaves rewrites theirs, both `NodeUpdated`.
+   */
+  const log = eventsOf(fresh(), 'build abcbc');
+  return countKind(log, 'NodeVisited') > 0 && countKind(log, 'NodeUpdated') > 0;
+})(), (() => {
+  const log = eventsOf(fresh(), 'build abcbc');
+  return `${log.length} events: ${countKind(log, 'NodeAllocated')} allocations, `
+    + `${countKind(log, 'NodeVisited')} steps, ${countKind(log, 'NodeUpdated')} rewrites`;
+})());
+
+check('one closing update per leaf, and no more', (() => {
+  const q = fresh();
+  const log = eventsOf(q, 'build mississippi');
+  const leaves = at(run(q, 'build mississippi'), 'leaves') as number;
+  const splits = at(run(fresh(), 'build mississippi'), 'splits') as number;
+  // Every leaf is closed exactly once; the rest of the rewrites are splits, of
+  // which there can be no more than there were splits.
+  const rewrites = countKind(log, 'NodeUpdated');
+  return rewrites >= leaves && rewrites <= leaves + splits;
+})(), (() => {
+  const log = eventsOf(fresh(), 'build mississippi');
+  const b = run(fresh(), 'build mississippi');
+  return `${countKind(log, 'NodeUpdated')} rewrites for ${String(at(b, 'leaves'))} leaves `
+    + `and ${String(at(b, 'splits'))} splits`;
+})());
+
+check('the whole log is linear in the word, not quadratic', (() => {
+  /*
+   * The claim the whole design rests on. Labelling leaves by what they spell
+   * would have rewritten every leaf on every character - n events per step for
+   * an algorithm that is meant to take n in total. Quadrupling the word should
+   * roughly quadruple the log; if it were quadratic it would grow sixteenfold.
+   */
+  const word = (n: number): string => {
+    let x = 20_260_907 % 2147483647;
+    let out = '';
+    for (let i = 0; i < n; i += 1) {
+      x = (x * 48271) % 2147483647;
+      out += x % 2 === 0 ? 'a' : 'b';
+    }
+    return out;
+  };
+  const small = eventsOf(fresh(), `build ${word(40)}`).length;
+  const large = eventsOf(fresh(), `build ${word(160)}`).length;
+  return large < small * 8;
+})(), (() => {
+  const word = (n: number): string => {
+    let x = 20_260_907 % 2147483647;
+    let out = '';
+    for (let i = 0; i < n; i += 1) {
+      x = (x * 48271) % 2147483647;
+      out += x % 2 === 0 ? 'a' : 'b';
+    }
+    return out;
+  };
+  const small = eventsOf(fresh(), `build ${word(40)}`).length;
+  const large = eventsOf(fresh(), `build ${word(160)}`).length;
+  return `${small} events for 40 letters, ${large} for 160 - a factor of `
+    + `${(large / small).toFixed(1)} for four times the input`;
+})());
 
 /* ── 5. Refusing ───────────────────────────────────────────────────── */
 

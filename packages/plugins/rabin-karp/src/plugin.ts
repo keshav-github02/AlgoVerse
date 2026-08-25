@@ -149,12 +149,11 @@ class Instance implements PluginInstance {
   /**
    * Every letter with the running hash it produced, linked in reading order.
    *
-   * A build emits this, and so does a change of modulus - because a change of
-   * modulus changes every number in the picture. There is no event for "this
-   * node's value is different now", and re-emitting the allocation is what the
-   * spine already means by a redraw: `build` after `build` works the same way.
-   * Anything less would leave the log describing a picture that is no longer
-   * on screen.
+   * Emitted by a build, which genuinely brings the nodes into being. A change
+   * of modulus does not: it changes every number and nothing else, and there is
+   * an event for that - see `#revalue`. This used to be emitted for both, which
+   * meant re-allocating nodes that had not moved and re-stating every pointer
+   * between them.
    */
   #picture(): SimEvent[] {
     const m = this.#pattern.length;
@@ -194,6 +193,23 @@ class Instance implements PluginInstance {
     return events;
   }
 
+  /**
+   * The same letters in the same places, holding different numbers.
+   *
+   * A new modulus changes every running hash and nothing else - not which
+   * letter is where, not the reading order, not what points at what. Saying
+   * only that is both smaller and truer than drawing the whole thing again:
+   * a redraw would have the log claim the nodes were made afresh, which is a
+   * different thing from their contents changing.
+   */
+  #revalue(): SimEvent[] {
+    return this.#pattern.split('').map((_, i): SimEvent => ({
+      kind: 'NodeUpdated',
+      node: i as NodeId,
+      value: this.#prefix[i] as number,
+    }));
+  }
+
   /* ── Commands ────────────────────────────────────────────────────── */
 
   #setModulus(value: number): OperationResult {
@@ -216,7 +232,7 @@ class Instance implements PluginInstance {
     for (let i = 0; i < this.#pattern.length; i += 1) {
       this.#prefix[i] = this.#hashOf(this.#pattern.slice(0, i + 1));
     }
-    const events = this.#picture();
+    const events = this.#revalue();
 
     return {
       ok: true,

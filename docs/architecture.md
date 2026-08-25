@@ -626,34 +626,72 @@ link must land. Then the substring count and the longest repeat are compared
 against **both** neighbours, with enumeration as referee: three structures, four
 opinions, one number. **60 words, 240 queries, 240 branching nodes built.**
 
-### What could not be logged, and saying so
+### NodeUpdated: the one event the spine was missing
 
-The picture here is the **finished** tree, not the construction, and that is a
-limitation rather than a preference. Every leaf's edge runs to the current end of
-the input, so a faithful step-by-step log would rewrite every leaf on every
-character - n events per step, for an algorithm whose entire claim is n events in
-total. There was a choice between logging something that is not what happened
-and logging the result.
+For most of this repository the event model needed nothing added to it. Allocate
+a node, point it at another, delete it, visit it - four verbs, and every
+persistent structure fits, because persistence means a change *makes a new node*
+rather than altering an old one.
 
-Three ways out were considered and rejected. Labelling leaves with the suffix
-they will eventually hold shows text that has not been read yet. Publishing each
-node's path instead of its edge label fixes the splits, since a split only
-inserts a node above an existing one and leaves its path alone - but a leaf's
-path grows on every character, so it moves the problem rather than solving it.
-Redrawing the affected nodes, which is how Rabin-Karp handles a change of
-modulus, is affordable for one node and not for every leaf every step.
+Four structures asked for a fifth verb independently, and it is worth listing
+them because the pattern is what settled the question. Rabin-Karp changes its
+modulus and with it every running hash in the picture. A link-cut tree keeps an
+aggregate on each splay node and rewrites it on every rotation. An Aho-Corasick
+state is an ordinary state until the last word has been read and then it is the
+end of a word. A suffix tree splits an edge, and the surviving half spells
+something shorter afterwards.
 
-So the build draws the tree it arrived at and reports the *shape* of the
-construction as numbers - phases, splits, suffix links made - while queries are
-logged step by step like everything else. `repeated` rather than `build` is the
-benchmarked command for the same reason: a construction that emits no traversal
-events would measure as costing nothing, which is the trap the Rabin-Karp
-benchmark fell into earlier. It measures **R² 1.0000**.
+Three of those had workarounds, all of them bad in a different way. Rabin-Karp
+re-emitted its allocations, which is a redraw: affordable once for a whole
+pattern, and it makes the log claim the nodes were made afresh when only their
+contents changed. The link-cut tree kept its aggregates unpublished, which meant
+the most interesting number in the structure could not be drawn, and paid for it
+again by making `evert` linear rather than logarithmic. Aho-Corasick shaped the
+whole trie before drawing any of it, which works only because it is built in one
+command. The suffix tree had no workaround at all.
 
-This is the fourth structure to want an event the spine does not have, and the
-first where no workaround is available. The case for a field-update event is now
-made by four independent plugins; it still has not been added, because it touches
-the reducer, conformance, both renderers and every explainer.
+So `NodeUpdated` exists now. Every field is optional and what is absent is
+unchanged, so a plugin says only what moved; and the reducer spreads the old
+node, which means **the pointers survive** - that is the entire difference
+between this and allocating the node again. `slot` and `origin` are deliberately
+not updatable: they say where a node came from and what it was called when it
+arrived, and a node whose provenance can change is a different node.
+
+Adding it turned out to be far less invasive than the case against it assumed.
+Two exhaustive switches over event kinds - the reducer and the default
+explainer - refused to compile until they handled it, which is exactly what
+those `never` checks are for. Nothing else needed changing: plugin explainers
+already fall through to `null` on a kind they do not know, and the renderers
+work from the reduced state rather than from the events.
+
+### The suffix tree can now be watched being built
+
+The suffix tree used to draw its finished shape and nothing else, because a
+faithful step-by-step log looked impossible: every leaf's edge runs to the
+current end of the input, so rewriting what each leaf spells on every character
+is n events per step for an algorithm whose entire claim is n events in total.
+
+The event did not make that cheaper - it made it expressible, and being able to
+express it showed the way round it. A leaf is now drawn by **which suffix it
+is**, a number fixed when the leaf is made, so its growing edge costs nothing to
+maintain. The label it spells is filled in once at the end. That closing pass is
+not a concession to the log: turning the implicit suffix tree into the explicit
+one by closing the open ends is a real step of Ukkonen's algorithm, and it is
+exactly n updates. The only other rewrite is the surviving half of a split edge,
+one per split.
+
+A check measures the result rather than trusting the reasoning: quadrupling the
+word takes the log from 399 events to 1737, **a factor of 4.4**, where the
+version that labelled leaves by what they spell would have grown sixteenfold.
+
+Two other things followed from it. `build` is the benchmarked command again -
+it could not be before, because a construction that emitted no traversal events
+measured as costing nothing, which is precisely the trap the Rabin-Karp
+benchmark had fallen into. It measures **R² 0.9996** against `O(n)`, so the
+linearity that is the whole point of Ukkonen's construction is now measured
+rather than asserted. And Rabin-Karp's redraw is gone: a change of modulus emits
+one update per letter instead of re-allocating every node and restating every
+pointer between them.
 
 ### Two greedy strategies that check each other
 
@@ -829,13 +867,19 @@ verification work genuinely scales: `2 * (n / 2) = n` comparisons, measured as
 complexity check, the same honest skip the graph plugins take.
 
 The other thing this plugin needed was a redraw. Changing the modulus changes
-every number in the picture, and the spine has no event meaning "this node's
-value is different now" - every structure before this one was persistent or
-append-only, so a value never changed in place. Re-emitting the allocations is
-what the spine already means by a redraw, since `build` after `build` works the
-same way, and conformance caught the first attempt: a `NodeReused` event carries
-no value, so the replayed picture kept the old hashes while the live one showed
-the new ones.
+every number in the picture, and at the time the spine had no event meaning
+"this node's value is different now" - every structure before this one was
+persistent or append-only, so a value never changed in place. Re-emitting the
+allocations was what the spine already meant by a redraw, since `build` after
+`build` works the same way, and conformance caught the first attempt: a
+`NodeReused` event carries no value, so the replayed picture kept the old hashes
+while the live one showed the new ones.
+
+This was the first of four structures to want a field update, and the one that
+shows most plainly why a redraw is not the same thing. A change of modulus does
+not make the nodes afresh; it changes what they hold. `NodeUpdated` exists now,
+and `modulus` emits one update per letter rather than re-allocating every node
+and restating every pointer between them.
 
 ### Aho-Corasick: KMP with the pattern replaced by a set
 
@@ -1046,12 +1090,12 @@ Every field a link-cut node carries is mutable: subtree aggregates change on
 every rotation, and which preferred path a vertex belongs to changes on every
 access. None of them appear in the picture, and that is not an oversight.
 
-The spine has no event meaning **"this node's field changed"** - only allocate,
-delete, and pointer-set. Every structure before these last two was persistent,
-where a change makes a new node by path copying, or append-only. Rabin-Karp hit
-the same wall a moment earlier and worked around it by re-emitting its
-allocations as a redraw, which is affordable for a whole pattern once but not
-for O(log n) nodes on every single query.
+When this was written the spine had no event meaning **"this node's field
+changed"** - only allocate, delete, and pointer-set. Every structure before
+these last two was persistent, where a change makes a new node by path copying,
+or append-only. Rabin-Karp hit the same wall a moment earlier and worked around
+it by re-emitting its allocations as a redraw, which is affordable for a whole
+pattern once but not for O(log n) nodes on every single query.
 
 So the aggregates stay internal - `path` reads them at the splay root after an
 access, and a check compares them against adding the path up by hand - and
@@ -1060,10 +1104,13 @@ would have to change on every access. The published node is `id`, `label`,
 `value`, `role`, `slot`, and nothing else that can move. Only pointers change,
 and pointers are exactly what the log can say.
 
-This is now the third plugin to want a field update, and the case for adding one
-to the spine is real. It has not been added: it touches the reducer, conformance,
-both renderers and every explainer, and that is a change to argue for before
-making, not one to slip in behind a plugin.
+This was the third plugin to want a field update, and `NodeUpdated` was added
+after the fourth asked as well. The aggregates could be published now. `evert`
+is a different matter: reversing eagerly was never only because the lazy bit
+was inexpressible. A pending reversal means the drawn left and right children
+are provisionally the wrong way round, so a lazy bit costs a picture that has to
+be read with a correction in mind - a trade-off between a textbook bound and a
+legible drawing, rather than a missing capability. That one is still open.
 
 ### Evert: a lazy bit that could not be drawn
 

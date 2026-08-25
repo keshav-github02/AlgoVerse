@@ -21,14 +21,19 @@
  *     node reached by dropping the first character, and that is one pointer
  *     away rather than a walk from the root.
  *
- * A note on what is drawn, because it is a real limitation rather than a
- * choice. The picture here is the **finished** tree, not the construction. A
- * faithful step-by-step log is not possible: a leaf's edge label grows on every
- * character, so writing down what changed at each step would be n events per
- * step for an algorithm whose whole point is n events in total. Rather than
- * quietly log something that is not what happened, the build reports the shape
- * of the construction as numbers - phases, splits, suffix links - and draws the
- * tree it arrived at. Queries are logged step by step as usual.
+ * The construction is logged as it happens, which took a change to the event
+ * model to make possible. A leaf's edge grows on every character, so labelling
+ * leaves by what they spell would be n events per step for an algorithm whose
+ * whole point is n events in total. Instead a leaf is drawn by **which suffix
+ * it is** - a number that never changes - and the label it spells is filled in
+ * once at the end, when the leaves stop growing. That final pass is not a fudge
+ * to make the log tidy: turning the implicit tree into the explicit one by
+ * closing the open ends is a real step of the algorithm, and it is exactly n
+ * updates.
+ *
+ * The one other thing that changes is the surviving half of a split edge. Its
+ * path from the root is unaffected - a split inserts a node above it - but what
+ * its own edge spells gets shorter, and that is a single update per split.
  */
 
 import {
@@ -181,13 +186,87 @@ class Instance implements PluginInstance {
 
   /* ── Ukkonen ─────────────────────────────────────────────────────── */
 
-  #make(start: number, end: number | null, suffix: number): NodeId {
+  /**
+   * What a node is called, which has to be settled when it is drawn.
+   *
+   * A leaf is named by the suffix it is, because the string it spells is not
+   * known until the input ends; a branch is named by what its own edge spells,
+   * which is fixed the moment it is cut out.
+   */
+  #describe(id: NodeId): { value: number; label: string; role: string; slot: string } {
+    const n = this.#get(id);
+    if (id === ROOT) return { value: 0, label: '·', role: 'root', slot: 'root' };
+    /*
+     * Which suffix a node stands for, or -1 for a branch. This rather than
+     * "has no children": a node cut out by a split has none for the moment it
+     * takes to attach them, and it was drawn as a leaf in that moment.
+     */
+    if (n.suffix >= 0) {
+      return {
+        // Which suffix, not how deep. A leaf's depth grows on every character
+        // and the suffix it stands for never changes, so this is the number
+        // that can be drawn once and left alone.
+        value: n.suffix,
+        // While the end is still open there is nothing to spell yet.
+        label: n.end === null ? `${n.suffix}` : this.#labelOf(id),
+        role: 'suffix',
+        slot: `s${n.suffix}`,
+      };
+    }
+    return {
+      value: n.depthChars,
+      label: this.#labelOf(id),
+      role: 'branch',
+      slot: `b${id}`,
+    };
+  }
+
+  #make(
+    start: number, end: number | null, suffix: number, depth: number, events: SimEvent[],
+  ): NodeId {
     const id = this.#next as NodeId;
     this.#next += 1;
     this.#nodes.set(id, {
-      id, start, end, next: new Map(), link: null, suffix, depthChars: 0, leaves: 0,
+      id, start, end, next: new Map(), link: null, suffix, depthChars: depth, leaves: 0,
+    });
+    const drawn = this.#describe(id);
+    events.push({
+      kind: 'NodeAllocated',
+      node: id,
+      value: drawn.value,
+      label: drawn.label,
+      role: drawn.role,
+      slot: drawn.slot,
+      origin: 0,
     });
     return id;
+  }
+
+  #setNext(id: NodeId, letter: string, to: NodeId, events: SimEvent[]): void {
+    const n = this.#get(id);
+    const changed = n.next.get(letter) !== to;
+    n.next.set(letter, to);
+    if (changed) {
+      events.push({ kind: 'PointerSet', from: id, slot: `c${letter}`, to, pointer: 'child' });
+    }
+  }
+
+  #setLink(id: NodeId, to: NodeId, events: SimEvent[]): void {
+    const n = this.#get(id);
+    const changed = n.link !== to;
+    n.link = to;
+    this.#linksMade += 1;
+    if (changed) {
+      events.push({
+        kind: 'PointerSet',
+        from: id,
+        slot: 'link',
+        to,
+        pointer: 'link',
+        directed: true,
+        weight: this.#get(to).depthChars,
+      });
+    }
   }
 
   /**
@@ -196,7 +275,7 @@ class Instance implements PluginInstance {
    * settles a suffix or advances the active point past a character it will
    * never revisit.
    */
-  #extend(i: number): void {
+  #extend(i: number, events: SimEvent[]): void {
     this.#leafEnd = i;
     this.#remainder += 1;
     let lastNew: NodeId | null = null;
@@ -208,15 +287,17 @@ class Instance implements PluginInstance {
 
       if (onward === undefined) {
         // Nothing starts this way yet, so the suffix becomes a new leaf.
-        this.#get(this.#activeNode).next.set(
-          first, this.#make(i, null, i - this.#remainder + 1),
+        this.#setNext(
+          this.#activeNode, first,
+          this.#make(i, null, i - this.#remainder + 1, 0, events),
+          events,
         );
         if (lastNew !== null) {
-          this.#get(lastNew).link = this.#activeNode;
-          this.#linksMade += 1;
+          this.#setLink(lastNew, this.#activeNode, events);
           lastNew = null;
         }
       } else {
+        events.push({ kind: 'NodeVisited', node: onward });
         const span = this.#edgeLength(onward);
         if (this.#activeLength >= span) {
           // The active point is past the end of this edge: step over it. The
@@ -235,8 +316,7 @@ class Instance implements PluginInstance {
            * owing suffixes, and the debt is paid by a later character.
            */
           if (lastNew !== null && this.#activeNode !== ROOT) {
-            this.#get(lastNew).link = this.#activeNode;
-            this.#linksMade += 1;
+            this.#setLink(lastNew, this.#activeNode, events);
             lastNew = null;
           }
           this.#activeLength += 1;
@@ -246,17 +326,31 @@ class Instance implements PluginInstance {
         // The edge agrees for a while and then does not, so it is cut in two
         // and the disagreement becomes a branch.
         const onwardNode = this.#get(onward);
-        const split = this.#make(onwardNode.start, onwardNode.start + this.#activeLength, -1);
-        this.#get(this.#activeNode).next.set(first, split);
-        this.#get(split).next.set(
-          this.#s[i] as string, this.#make(i, null, i - this.#remainder + 1),
+        const split = this.#make(
+          onwardNode.start, onwardNode.start + this.#activeLength, -1,
+          this.#get(this.#activeNode).depthChars + this.#activeLength, events,
         );
+        this.#setNext(this.#activeNode, first, split, events);
+        this.#setNext(
+          split, this.#s[i] as string,
+          this.#make(i, null, i - this.#remainder + 1, 0, events),
+          events,
+        );
+
+        /*
+         * The surviving half keeps its path from the root and its children, and
+         * loses the front of its own edge. That is the one thing in the whole
+         * construction that changes an existing node without remaking it - and
+         * a leaf is unaffected, because a leaf is drawn by which suffix it is
+         * rather than by what it spells.
+         */
         onwardNode.start += this.#activeLength;
-        this.#get(split).next.set(this.#s[onwardNode.start] as string, onward);
-        if (lastNew !== null) {
-          this.#get(lastNew).link = split;
-          this.#linksMade += 1;
+        if (onwardNode.next.size > 0) {
+          events.push({ kind: 'NodeUpdated', node: onward, label: this.#labelOf(onward) });
         }
+
+        this.#setNext(split, this.#s[onwardNode.start] as string, onward, events);
+        if (lastNew !== null) this.#setLink(lastNew, split, events);
         lastNew = split;
         this.#splits += 1;
       }
@@ -268,6 +362,7 @@ class Instance implements PluginInstance {
       } else if (this.#activeNode !== ROOT) {
         // The suffix link: where the next-shorter suffix is inserted from.
         this.#activeNode = this.#get(this.#activeNode).link ?? ROOT;
+        events.push({ kind: 'NodeVisited', node: this.#activeNode });
       }
     }
   }
@@ -293,53 +388,24 @@ class Instance implements PluginInstance {
 
   /* ── Drawing, once ───────────────────────────────────────────────── */
 
-  #picture(): SimEvent[] {
-    const events: SimEvent[] = [];
-    const order: NodeId[] = [];
-    const collect = (id: NodeId): void => {
-      order.push(id);
-      for (const child of [...this.#get(id).next.values()].sort((a, b) => a - b)) collect(child);
-    };
-    collect(ROOT);
-
-    for (const id of order) {
-      const n = this.#get(id);
-      const leaf = n.next.size === 0;
+  /**
+   * Closing the open ends.
+   *
+   * Until now every leaf has run to wherever the input had got to, which is why
+   * a leaf is drawn by which suffix it is rather than by what it spells. The
+   * input has finished, so the ends can be written down - and this is the step
+   * that turns the implicit suffix tree into the explicit one, not a tidying-up
+   * of the log. One update per leaf, which is n of them.
+   */
+  #close(events: SimEvent[]): void {
+    for (const n of this.#nodes.values()) if (n.end === null) n.end = this.#s.length;
+    this.#settle();
+    for (const n of this.#nodes.values()) {
+      if (n.id === ROOT || n.suffix < 0) continue;
       events.push({
-        kind: 'NodeAllocated',
-        node: id,
-        // How far into the word the path to here reaches. For a leaf that is
-        // the whole suffix, so the two numbers on screen say the same thing
-        // from either end.
-        value: n.depthChars,
-        label: id === ROOT ? '·' : this.#labelOf(id),
-        role: id === ROOT ? 'root' : (leaf ? 'suffix' : 'branch'),
-        slot: id === ROOT ? 'root' : (leaf ? `s${n.suffix}` : `b${id}`),
-        origin: 0,
+        kind: 'NodeUpdated', node: n.id, label: this.#labelOf(n.id), value: n.suffix,
       });
     }
-    for (const id of order) {
-      for (const [first, child] of this.#get(id).next) {
-        events.push({
-          kind: 'PointerSet', from: id, slot: `c${first}`, to: child, pointer: 'child',
-        });
-      }
-    }
-    for (const id of order) {
-      const link = this.#get(id).link;
-      if (link === null) continue;
-      events.push({
-        kind: 'PointerSet',
-        from: id,
-        slot: 'link',
-        to: link,
-        pointer: 'link',
-        directed: true,
-        weight: this.#get(link).depthChars,
-      });
-    }
-    events.push({ kind: 'RootsSet', roots: [ROOT] });
-    return events;
   }
 
   /* ── Commands ────────────────────────────────────────────────────── */
@@ -353,12 +419,11 @@ class Instance implements PluginInstance {
     this.reset();
     this.#text = text;
     this.#s = `${text}${END}`;
-    this.#make(-1, -1, -1);
-    for (let i = 0; i < this.#s.length; i += 1) this.#extend(i);
-    // Leaves stop growing here, so their open ends can be closed and the shape
-    // read off without the global end being consulted again.
-    for (const n of this.#nodes.values()) if (n.end === null) n.end = this.#s.length;
-    this.#settle();
+    const events: SimEvent[] = [];
+    this.#make(-1, -1, -1, 0, events);
+    for (let i = 0; i < this.#s.length; i += 1) this.#extend(i, events);
+    this.#close(events);
+    events.push({ kind: 'RootsSet', roots: [ROOT] });
 
     const leaves = [...this.#nodes.values()].filter((n) => n.next.size === 0).length;
     const edgeChars = [...this.#nodes.values()]
@@ -384,7 +449,7 @@ class Instance implements PluginInstance {
          */
         distinctSubstrings: edgeChars - leaves,
       },
-      events: this.#picture(),
+      events,
       statsDelta: { nodesAllocated: this.#nodes.size, updates: 1 },
     };
   }
@@ -531,13 +596,13 @@ class Instance implements PluginInstance {
     const edges: StructureEdge[] = [];
 
     for (const n of [...this.#nodes.values()].sort((a, b) => a.id - b.id)) {
-      const leaf = n.next.size === 0;
+      const drawn = this.#describe(n.id);
       nodes.push({
         id: n.id,
-        label: n.id === ROOT ? '·' : this.#labelOf(n.id),
-        value: n.depthChars,
-        role: n.id === ROOT ? 'root' : (leaf ? 'suffix' : 'branch'),
-        slot: n.id === ROOT ? 'root' : (leaf ? `s${n.suffix}` : `b${n.id}`),
+        label: drawn.label,
+        value: drawn.value,
+        role: drawn.role,
+        slot: drawn.slot,
         origin: 0,
       });
       for (const [first, child] of n.next) {
@@ -578,16 +643,20 @@ export const suffixTree: AlgorithmPlugin = {
   explain: explainSuffixTree,
   benchmark: {
     sizes: [16, 32, 64, 128, 256, 512],
-    command: 'repeated',
+    command: 'build',
+    /** Nothing: the command being measured is the one that does the building. */
+    setup: (): readonly string[] => [],
     /**
      * A pseudo-random word over two letters, which branches the most and so
-     * makes the most nodes. `build` itself cannot be the measured command here:
-     * the construction is not logged step by step, for the reason given at the
-     * top of this file, so it emits no traversal events and would measure as
-     * costing nothing. `repeated` looks at every node, which is the honest
-     * linear thing this structure does.
+     * makes the most nodes and the most splits.
+     *
+     * `build` is the measured command now that the construction is logged. It
+     * could not be before: nothing was recorded until the tree was finished, so
+     * it emitted no traversal events and measured as costing nothing - the same
+     * trap the Rabin-Karp benchmark fell into. What is counted is the walking
+     * back through suffixes, which is the part whose linearity is the claim.
      */
-    setup: (n: number): readonly string[] => {
+    probes: (n: number): readonly string[] => {
       let x = 20_260_906 % 2147483647;
       let word = '';
       for (let i = 0; i < n; i += 1) {
@@ -596,7 +665,6 @@ export const suffixTree: AlgorithmPlugin = {
       }
       return [`build ${word}`];
     },
-    probes: (): readonly string[] => ['repeated'],
   },
   createInstance: (_ctx: EngineContext): PluginInstance => new Instance(),
 };

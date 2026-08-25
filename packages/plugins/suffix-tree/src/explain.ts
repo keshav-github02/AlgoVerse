@@ -19,13 +19,25 @@ export const explainSuffixTree: Explainer = (event: SimEvent, ctx: ExplainContex
           + `down from here that stops wherever it likes - including part way along an edge.`;
       }
       if (event.role === 'suffix') {
-        return `A leaf, reached by "${event.label}", ${event.value} characters from the root. `
-          + `There is one of these per suffix, which is what the terminator on the end buys: `
-          + `without it a suffix could stop in the middle of an edge and have no leaf of its own.`;
+        return `A leaf for suffix ${event.value}. Its edge is left open - it runs to wherever the `
+          + `input has got to - so there is nothing to spell yet, and it is drawn by which suffix `
+          + `it is. Leaving the end open is what stops every leaf having to be lengthened on every `
+          + `character.`;
       }
       return `A branch at ${event.value} characters, reached by "${event.label}". Two suffixes `
         + `agree this far and then part company, so the path to here occurs at least twice - which `
         + `is the whole of what "repeated substring" means.`;
+    }
+
+    case 'NodeUpdated': {
+      if (event.label === undefined) return null;
+      return event.value === undefined
+        ? `The surviving half of a split edge now spells only "${event.label}". Its path from the `
+          + `root has not moved - the new node went in above it - but the front of its own edge `
+          + `belongs to that node now.`
+        : `Suffix ${event.value}'s edge is closed and spells "${event.label}". The input has `
+          + `finished, so the open ends can be written down: this is the step that turns the `
+          + `implicit tree into the explicit one, and it is one update per leaf.`;
     }
 
     case 'PointerSet': {
@@ -59,9 +71,9 @@ export const explainSuffixTree: Explainer = (event: SimEvent, ctx: ExplainContex
     }
 
     case 'RootsSet':
-      return `The tree is finished. What is drawn is the shape it ended at, not the order it was `
-        + `assembled in - a leaf's edge grows on every character, so a faithful record of the `
-        + `construction would be longer than the construction itself.`;
+      return `The tree is finished, in one pass over the word. Every suffix ends at a leaf of its `
+        + `own, and every question about a substring is now a walk of at most the length of the `
+        + `question.`;
 
     case 'NodeReused':
     case 'NodeDeleted':

@@ -12,6 +12,16 @@ export function describeEvent(e: SimEvent | undefined): string {
   if (e === undefined) return 'ready';
   switch (e.kind) {
     case 'NodeAllocated': return `allocate ${e.label} = ${e.value}`;
+    case 'NodeUpdated': {
+      const parts = [
+        e.label === undefined ? null : `reads ${e.label}`,
+        e.value === undefined ? null : `holds ${e.value}`,
+        e.role === undefined ? null : `counts as ${e.role}`,
+      ].filter((part) => part !== null);
+      return parts.length === 0
+        ? `node ${e.node} restated`
+        : `node ${e.node} now ${parts.join(', ')}`;
+    }
     case 'NodeDeleted': return `free node ${e.node}`;
     case 'PointerSet': return e.to === null
       ? `clear ${e.slot} of node ${e.from}`

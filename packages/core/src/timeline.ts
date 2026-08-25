@@ -45,6 +45,39 @@ export type SimEvent =
        */
       readonly order?: number;
     }
+  /**
+   * A node's own fields changed, without the node being made again.
+   *
+   * `NodeAllocated` brings a node into being and clears its pointers, so it
+   * cannot double as "this label is different now" - replaying it would make
+   * the node forget everything it points at. Every field here is optional and
+   * what is absent is unchanged, so a plugin says only what moved.
+   *
+   * `slot` and `origin` are deliberately not updatable. They say where a node
+   * came from and what it was called when it arrived, and a node whose
+   * provenance can change is a different node.
+   *
+   * This event exists because four structures wanted it independently. A
+   * rolling hash changes its modulus and every window's value with it; a
+   * link-cut tree keeps an aggregate on each splay node and rewrites it on
+   * every rotation; an Aho-Corasick state stops being an ordinary state and
+   * becomes the end of a word once the last word has been read; and a suffix
+   * tree splits an edge, which changes what the surviving half spells. The
+   * first three could be worked around - by redrawing, by not publishing the
+   * field, by shaping the structure before drawing any of it - and the fourth
+   * could not, which is what settled it.
+   */
+  | {
+      readonly kind: 'NodeUpdated';
+      readonly node: NodeId;
+      readonly value?: number;
+      readonly values?: readonly number[];
+      readonly label?: string;
+      readonly role?: string;
+      readonly depth?: number;
+      readonly group?: number;
+      readonly order?: number;
+    }
   | { readonly kind: 'NodeDeleted'; readonly node: NodeId }
   /** `to: null` clears the slot. Slots are plugin-defined names, not positions. */
   | {
@@ -138,6 +171,26 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
         ...(e.group === undefined ? {} : { group: e.group }),
         ...(e.order === undefined ? {} : { order: e.order }),
         pointers: new Map(),
+      });
+      return { ...s, nodes };
+    }
+    case 'NodeUpdated': {
+      const node = s.nodes.get(e.node);
+      // Updating something that is not there is ignored rather than fatal, the
+      // same way deleting it is: replay of a partial log has to be possible.
+      if (node === undefined) return s;
+      const nodes = new Map(s.nodes);
+      // The spread keeps the pointers, which is the entire difference between
+      // this and allocating the node again.
+      nodes.set(e.node, {
+        ...node,
+        ...(e.value === undefined ? {} : { value: e.value }),
+        ...(e.values === undefined ? {} : { values: e.values }),
+        ...(e.label === undefined ? {} : { label: e.label }),
+        ...(e.role === undefined ? {} : { role: e.role }),
+        ...(e.depth === undefined ? {} : { depth: e.depth }),
+        ...(e.group === undefined ? {} : { group: e.group }),
+        ...(e.order === undefined ? {} : { order: e.order }),
       });
       return { ...s, nodes };
     }
