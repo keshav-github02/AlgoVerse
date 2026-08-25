@@ -94,6 +94,39 @@ check('nodes never move while scrubbing a fixed log', (() => {
   return true;
 })(), `${s.playback.length + 1} steps`);
 
+check('the canvas holds every node at every step, and says which are absent', (() => {
+  /*
+   * What makes the app able to animate at all. The scene is what exists now;
+   * the canvas is everything that ever exists, at the same coordinates, so a
+   * node leaving stays in the document and can be faded instead of being
+   * unmounted. The two have to agree exactly: present plus off is the canvas,
+   * and nothing is in both.
+   */
+  const whole = (() => { s.playback.last(); return s.view().canvas.nodes.length; })();
+  for (let step = 0; step <= s.playback.length; step += 1) {
+    s.playback.seek(step);
+    const v = s.view();
+    if (v.canvas.nodes.length !== whole) return false;
+    const present = new Set(v.scene.nodes.map((n) => n.node.id));
+    const off = new Set(v.off);
+    if (present.size + off.size !== whole) return false;
+    for (const id of off) if (present.has(id)) return false;
+    // And the canvas is drawn on the same sheet as the scene, or the two would
+    // not line up when one is swapped for the other.
+    if (v.canvas.width !== v.scene.width || v.canvas.height !== v.scene.height) return false;
+  }
+  return true;
+})(), `${s.playback.length + 1} steps, every one accounting for all its nodes`);
+
+check('at step zero the canvas is full and all of it is off', (() => {
+  // The case that proves nothing is being unmounted: nothing is present, and
+  // yet there is still a whole picture to fade out.
+  s.playback.first();
+  const v = s.view();
+  return v.scene.nodes.length === 0 && v.off.length === v.canvas.nodes.length
+    && v.canvas.nodes.length > 0;
+})(), 'a full canvas with nothing on it');
+
 check('edges are dropped when either end is absent', (() => {
   for (let step = 0; step <= s.playback.length; step += 1) {
     s.playback.seek(step);

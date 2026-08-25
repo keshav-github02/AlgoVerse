@@ -74,6 +74,8 @@ the reasoning behind each decision.
 
 ```
 algoverse/
+├── .github/workflows/       runs pnpm check on every push and pull request
+├── .githooks/               opt-in pre-commit hook; enable with `pnpm hooks`
 ├── apps/
 │   └── web/                 application shell
 ├── packages/
@@ -127,6 +129,19 @@ The plugin contract is the extension point. A new algorithm should need no chang
 Engine changes need tests. Two kinds carry the weight: golden-file snapshots of event logs, and
 property tests that check a structure against a naive reference model over random operation
 sequences.
+
+```
+pnpm check     typecheck, then every plugin's own check file - 39 of them
+pnpm demo      regenerate demo/index.html, and warn about layouts that drop edges
+pnpm build     compile the application
+pnpm hooks     enable the pre-commit hook that refuses conflict markers
+```
+
+`pnpm check` is what CI runs, on Node 22 and 24. It is the only thing in the repository that can
+tell you a red-black tree is unbalanced, so it is worth running before pushing rather than after.
+
+Requires Node 22.18 or newer. The check files are run as `node file.ts` with no flags, and 22.18
+is the first version that strips types without being asked to.
 
 ## License
 

@@ -58,21 +58,12 @@
 html, body, #root { height: 100%; }
 body { margin: 0; background: var(--bg); }
 
-/* The renderer's scene styles, kept verbatim so the app and the generated
-   demo page draw identically. */
-.av-edge { fill: none; stroke-linecap: round; stroke-width: 1.5; opacity: .55; }
-.av-edge.av-reused { stroke-width: 2.1; stroke-dasharray: 4 3.5; opacity: .95; }
-.av-node rect { stroke-width: 1.25; fill: var(--av-node-bg); }
-.av-node .av-value { font: 600 16px var(--av-mono); font-variant-numeric: tabular-nums;
-  fill: var(--av-text); }
-.av-node .av-label { font: 9.5px var(--av-mono); fill: var(--av-faint); }
-.av-arrows .av-arrow { stroke: none; opacity: .85; }
-.av-weights .av-weight { font: 600 10.5px var(--av-mono); fill: var(--av-text);
-  paint-order: stroke; stroke: var(--av-node-bg); stroke-width: 3.5px; stroke-linejoin: round; }
-.av-node.av-highlight rect { stroke-width: 3; }
-.av-node.av-dim { opacity: .12; }
-.av-node.av-selected rect { stroke-width: 3.25; }
-.av-tick { stroke: none; }
+/*
+ * Everything that draws the scene itself lives in the renderer, and is injected
+ * from `SCENE_STYLES` at startup - see main.tsx. It used to be copied here,
+ * described as verbatim, and it had drifted. What stays below is only what the
+ * app has and the renderer does not.
+ */
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -81,10 +72,3 @@ body { margin: 0; background: var(--bg); }
 /* Legend swatches mirror the canvas treatment so the key is literal. */
 .av-legend-primary { stroke-width: 2.75; }
 .av-legend-secondary { stroke-dasharray: 3 2.5; opacity: .62; }
-.av-node.av-em-primary rect { stroke-width: 2.75; }
-.av-node.av-em-secondary { opacity: .62; }
-.av-node.av-em-secondary rect { stroke-dasharray: 3 2.5; }
-.av-node.av-em-muted { opacity: .1; }
-.av-edge.av-em-primary { opacity: 1; }
-.av-edge.av-em-secondary { opacity: .38; }
-.av-edge.av-em-muted { opacity: .06; }

@@ -5,14 +5,15 @@
   "type": "module",
   "packageManager": "pnpm@10.14.0",
   "engines": {
-    "node": ">=22.6"
+    "node": ">=22.18"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json && tsc -p apps/web/tsconfig.json",
     "dev": "pnpm --filter @algoverse/web dev",
     "build": "pnpm --filter @algoverse/web build",
     "check": "pnpm typecheck && pnpm -r --sequential check",
-    "demo": "pnpm --filter @algoverse/renderer demo"
+    "demo": "pnpm --filter @algoverse/renderer demo",
+    "hooks": "git config core.hooksPath .githooks"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]

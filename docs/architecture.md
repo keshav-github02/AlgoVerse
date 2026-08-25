@@ -1103,6 +1103,73 @@ visits at every size. A benchmark that measures nothing does not look like an
 error, it looks like a fast operation, which is the reason to read the raw
 numbers rather than only the fitted verdict.
 
+### Continuous integration, and a version floor that was wrong
+
+Thirty-nine check files verify every structure against a different algorithm or
+against the raw definition, and until now nothing ran them but a person
+remembering to. They have earned it: over the course of building the last few
+structures they caught an undirected edge that the log named one way and the
+picture the other, a `role` that changed after its node had been drawn, a value
+change no event could describe, a benchmark that measured literally zero, and a
+probe sequence that measured a splay tree's adaptation to a repeating pattern
+and reported it as the general case. None of those would have been found by
+reading the code.
+
+The workflow runs `pnpm check`, then `pnpm build`, then `pnpm demo` - the last
+because generating the demo page walks every registered plugin and warns when a
+step draws an edge the layout has nowhere to put, which is how a layout bug
+surfaces at all.
+
+Sizing the workflow turned up a wrong claim in `package.json`. It declared
+`node >= 22.6`, and the check files are run as `node file.ts` with no flags:
+22.6 is the release that *added* type stripping behind a flag, and 22.18 is the
+one that turned it on by default. So the floor was two years of releases too
+low, and anyone who took it literally would have found nothing runnable. It now
+says 22.18, and CI runs both 22 and 24 so the floor is exercised rather than
+asserted.
+
+There is also an opt-in `pre-commit` hook - `pnpm hooks` - that refuses a commit
+still containing conflict markers. It looks for the opening and closing markers,
+which nothing else writes, and treats a bare row of equals signs as a marker
+only in their company, because on its own it is an ordinary Markdown underline.
+
+### The app could not animate, for three reasons at once
+
+The generated demo page animates and the application did not, and the reasons
+turned out to be independent.
+
+**React was keyed by position.** `sceneElements` returns a fresh list every
+step, and the elements were keyed by their index in it. Element seven at one
+step is not the same node as element seven at the next, so React reused the DOM
+element for something else - which is why a transition either did not run or ran
+on the wrong thing. It is a latent correctness bug rather than only a missing
+feature. The renderer already stamps `data-node` and `data-edge`, which is how
+the demo page finds its own elements, so identity was available and only needed
+using.
+
+**A node leaving was unmounted rather than faded.** The view filtered the stable
+layout down to what exists at the current step, so an element that left the
+structure left the document, and there was nothing for the browser to animate.
+The view now also publishes the whole canvas - every node that ever exists, at
+the same coordinates - along with the list of which ones this step does not
+have, and the renderer's existing `off` option marks them. Positions never move,
+because the layout is computed once over the union; appearing and leaving is the
+whole of what there is to animate, and it is now animated.
+
+**The stylesheet had drifted.** `apps/web/src/styles.css` carried a copy of the
+renderer's scene styles under a comment saying it was kept verbatim, and it was
+not: it was missing the link-edge treatment, every `transition`, the `.av-off`
+rules, and the rule that hides a node's tick unless it is highlighted. So the
+app drew link edges unstyled and showed ticks permanently, and would not have
+animated even with the first two fixed. The app now injects the renderer's
+`SCENE_STYLES` string at startup and keeps only the rules the renderer does not
+have. A copy described as verbatim is a copy nobody will check.
+
+Two checks were added for the part that has an invariant: at every step the
+present nodes plus the off nodes are exactly the canvas and nothing is in both,
+and at step zero the canvas is full while nothing is present - which is the case
+that proves nothing is being unmounted.
+
 ### Colour by group, not only by provenance
 
 A node's colour has always come from `origin` - which generation allocated it.

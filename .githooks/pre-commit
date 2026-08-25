@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Refuses a commit that still has conflict markers in it.
+#
+# Enable with:  pnpm hooks
+#
+# A resolved conflict looks exactly like resolved work until something reads
+# the file, and by then it is committed. This is the one class of mistake worth
+# a hook: it costs nothing to check and the damage is silent.
+
+set -e
+
+marked=''
+
+for file in $(git diff --cached --name-only --diff-filter=ACM); do
+  [ -f "$file" ] || continue
+
+  # The opening and closing markers are unambiguous - git writes them with a
+  # branch name after a space, and nothing else does.
+  if git show ":$file" 2>/dev/null | grep -qE '^(<<<<<<< |>>>>>>> )'; then
+    marked="$marked $file"
+    continue
+  fi
+
+  # A bare row of equals signs is only a marker in company: on its own it is a
+  # perfectly ordinary underline in a Markdown file.
+  if git show ":$file" 2>/dev/null | grep -q '^<<<<<<<$' \
+    && git show ":$file" 2>/dev/null | grep -q '^=======$'; then
+    marked="$marked $file"
+  fi
+done
+
+if [ -n "$marked" ]; then
+  echo "pre-commit: conflict markers are still in:"
+  for file in $marked; do
+    echo "  $file"
+  done
+  echo
+  echo "Finish the merge, then commit. To commit anyway: git commit --no-verify"
+  exit 1
+fi

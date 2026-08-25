@@ -1,0 +1,48 @@
+# Runs everything that can say "this is wrong" without a human reading output.
+#
+# `pnpm check` is the whole of it: a typecheck across the workspace, then every
+# plugin's own check file in sequence. Those files are the repository's real
+# defence - they verify each structure against a different algorithm or against
+# the raw definition, recompute invariants from the published graph, and
+# measure declared complexities rather than trusting them. Nothing else here
+# knows whether a red-black tree is balanced.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      # Both ends of the supported range. The check files are run as
+      # `node file.ts` with no flags, so the floor is the first version that
+      # strips types without being asked to.
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Typecheck plus all 39 plugin check files.
+      - run: pnpm check
+
+      # The app has to compile, not merely typecheck.
+      - run: pnpm build
+
+      # And the demo page has to be generatable: it walks every registered
+      # plugin, and it warns when a step draws an edge the layout has no place
+      # for - which is how a layout bug gets noticed at all.
+      - run: pnpm demo

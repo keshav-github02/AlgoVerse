@@ -58,7 +58,19 @@ export interface HistoryEntry {
 }
 
 export interface View {
+  /** What exists at this step. Positions come from the stable layout. */
   readonly scene: PositionedScene;
+  /**
+   * Every node that ever exists, at the same positions.
+   *
+   * Drawing this rather than `scene` is what lets a node leaving the structure
+   * be animated: it stays in the document and is marked `off`, so the browser
+   * has something to fade. Drawing only what is present means React unmounts
+   * the element and there is nothing left to transition.
+   */
+  readonly canvas: PositionedScene;
+  /** The nodes on the canvas that are not part of this step. */
+  readonly off: readonly NodeId[];
   readonly state: SceneState;
   readonly visited: readonly NodeId[];
 }
@@ -184,14 +196,18 @@ export class Session {
   view(): View {
     const state = this.playback.scene();
     const present = new Set<NodeId>(state.nodes.keys());
+    const width = Math.max(this.#stable.width, 1);
+    const height = Math.max(this.#stable.height, 1);
     return {
       state,
       scene: {
         nodes: this.#stable.nodes.filter((n) => present.has(n.node.id)),
         edges: this.#stable.edges.filter((e) => present.has(e.from) && present.has(e.to)),
-        width: Math.max(this.#stable.width, 1),
-        height: Math.max(this.#stable.height, 1),
+        width,
+        height,
       },
+      canvas: { nodes: this.#stable.nodes, edges: this.#stable.edges, width, height },
+      off: this.#stable.nodes.filter((n) => !present.has(n.node.id)).map((n) => n.node.id),
       visited: [...state.visits.keys()].filter((id) => present.has(id)),
     };
   }

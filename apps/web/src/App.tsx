@@ -235,7 +235,8 @@ export function App(): JSX.Element {
                 <Complexity report={report} pluginName={plugin.meta.name} />
               ) : (
               <Scene
-                scene={view.scene} visited={diff === null ? view.visited : []} selected={selected}
+                scene={view.canvas} off={view.off}
+                visited={diff === null ? view.visited : []} selected={selected}
                 showLabels={showLabels} onSelect={onSelect}
                 {...(diff === null ? {} : { emphasis: diff.emphasis })}
               />
