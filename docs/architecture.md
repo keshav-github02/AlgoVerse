@@ -933,14 +933,27 @@ states as it went, then marking the last state of each word as a word-ending -
 and *ending a word* is part of what a state is. It changes the colour in the
 picture, and the log carries a role on the event that brings a node into being.
 Marking it afterwards meant a node was drawn as one thing and quietly became
-another, which is exactly what the event log cannot express.
+another, which the event log could not express.
 
-The fix is the pattern the stranding bugs kept needing, arrived at for a
-different reason: **shape the structure before drawing any of it.** The trie is
-now built in full, and only then does a second pass emit the allocations, with
-each role already settled. It is the fourth or fifth time this has been the
-answer, and the reason is always the same - the log describes what happened, so
-nothing may happen before there is something true to say about it.
+The first fix was the pattern the stranding bugs kept needing, arrived at for a
+different reason: shape the structure before drawing any of it. That worked, and
+it cost the construction: the trie appeared all at once, fully formed, and the
+letters were never seen going in.
+
+`NodeUpdated` removed the need for it, and this plugin is the clearest case of
+why the event was worth having. The trie is now built in the open - a state is
+allocated when its letter arrives, and told to count as the end of a word at the
+moment it becomes one. There are never more of those than there are words, since
+two distinct words cannot end at the same state.
+
+Three checks hold it to that, and the first is the one that matters: it replays
+the log step by step and asserts that the state for `he` is an **ordinary state
+at one step and a word-ending at a later one**. That is precisely the thing the
+event model could not previously describe, so asserting it is the same as
+asserting the event works. A second counts the changes - four words, four
+changes - and a third checks that the first pointer in the log comes before the
+last allocation, because a trie that was shaped and then drawn would have every
+allocation before every pointer.
 
 Two checks were also deleted rather than fixed. `build []` is refused by the
 parser, which knows a list parameter cannot be empty, so the plugin's own guard
@@ -1105,12 +1118,28 @@ would have to change on every access. The published node is `id`, `label`,
 and pointers are exactly what the log can say.
 
 This was the third plugin to want a field update, and `NodeUpdated` was added
-after the fourth asked as well. The aggregates could be published now. `evert`
-is a different matter: reversing eagerly was never only because the lazy bit
-was inexpressible. A pending reversal means the drawn left and right children
-are provisionally the wrong way round, so a lazy bit costs a picture that has to
-be read with a correction in mind - a trade-off between a textbook bound and a
-legible drawing, rather than a missing capability. That one is still open.
+after the fourth asked as well. Two things about the link-cut tree survive it,
+and both are worth being precise about, because the obvious reading - that the
+event fixes everything here - is wrong twice over.
+
+**The aggregates still cannot be drawn, and the event is not what is missing.**
+`StructureNode` has two channels for a number: `value`, the node's own datum,
+and `values`, the several data it holds - which is how a B-tree node carries its
+keys. The renderer *replaces* the displayed text with `values` when it is
+present, and describes it to a screen reader as "keys". A subtree sum is neither
+of those things: publishing it as `values` would hide the vertex number, which
+is the node's identity and the most important thing in that picture, and would
+label an aggregate as a key. So the gap is in the node schema rather than in the
+event model - there is no field whose meaning is "a summary of everything
+below" - and closing it is a renderer decision about how to draw a second number
+per node, not another event.
+
+**`evert` is a trade-off rather than a limitation.** Reversing eagerly was never
+only because a lazy bit was inexpressible. A pending reversal means the drawn
+left and right children are provisionally the wrong way round, so the bit buys a
+textbook bound and costs a picture that has to be read with a correction in
+mind. Which of those matters more is a judgement about what this repository is
+for, and it stays open rather than being settled by the event existing.
 
 ### Evert: a lazy bit that could not be drawn
 

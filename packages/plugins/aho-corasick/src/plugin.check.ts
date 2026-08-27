@@ -6,8 +6,8 @@
  */
 
 import {
-  createRng, help, parseCommand,
-  type NodeId, type OperationError, type StructureGraph,
+  Timeline, createRng, help, parseCommand,
+  type NodeId, type OperationError, type SimEvent, type StructureGraph,
 } from '@algoverse/core';
 import { runConformance, type PluginInstance } from '@algoverse/plugin-sdk';
 import { kmp } from '@algoverse/plugin-kmp';
@@ -316,6 +316,65 @@ check('with nothing to report they cost the same', (() => {
   run(q, 'build [xyz]');
   return visitsOf(q, 'count aaaaa') === visitsOf(q, 'search aaaaa');
 })(), 'z is zero, so O(n + z) is O(n)');
+
+/* ── 4b. The trie is built in the open ─────────────────────────────── */
+
+console.log('');
+console.log('the log of the construction');
+
+function buildLog(line: string): readonly SimEvent[] {
+  const parsed = parseCommand(line, plugin.commands);
+  if (!parsed.ok) return [];
+  const r = fresh().execute(parsed.command);
+  return r.ok ? r.events : [];
+}
+
+check('a state is drawn before it is known to finish a word', (() => {
+  /*
+   * The thing that used to be impossible. Reading "he" letter by letter, the
+   * state for "he" is allocated when the e arrives and only becomes the end of
+   * a word once the word is finished - so at some step of the replay it is an
+   * ordinary state, and at a later one it is not.
+   */
+  const log = buildLog('build [he she his hers]');
+  const line = new Timeline();
+  line.append(log);
+
+  const roleAt = (step: number): string | undefined => {
+    for (const [, node] of line.stateAt(step).nodes) {
+      if (node.slot === 'ce' && node.value === 2) return node.role;
+    }
+    return undefined;
+  };
+
+  let sawInner = false;
+  let sawWord = false;
+  for (let step = 0; step <= line.length; step += 1) {
+    const role = roleAt(step);
+    if (role === 'inner') sawInner = true;
+    if (role === 'word' && sawInner) sawWord = true;
+  }
+  return sawInner && sawWord;
+})(), 'the state for "he" is ordinary, then it is a word');
+
+check('one such change per word, and never more', (() => {
+  const log = buildLog('build [he she his hers]');
+  // Two distinct words cannot end at the same state, so the count is exact.
+  return log.filter((e) => e.kind === 'NodeUpdated').length === 4;
+})(), '4 words, 4 states told to count as one');
+
+check('the trie edges appear as the letters are read, not afterwards', (() => {
+  /*
+   * The first pointer must come before the last allocation - if the whole trie
+   * were shaped and then drawn, every allocation would precede every pointer.
+   */
+  const log = buildLog('build [he she his hers]');
+  const firstPointer = log.findIndex((e) => e.kind === 'PointerSet');
+  const lastAllocation = log.reduce(
+    (last, e, i) => (e.kind === 'NodeAllocated' ? i : last), -1,
+  );
+  return firstPointer >= 0 && firstPointer < lastAllocation;
+})());
 
 /* ── 5. Against KMP, one word at a time ────────────────────────────── */
 

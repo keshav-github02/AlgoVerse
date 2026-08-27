@@ -259,15 +259,30 @@ class Instance implements PluginInstance {
     });
     this.#next = 1;
 
+    const events: SimEvent[] = [];
+    events.push({
+      kind: 'NodeAllocated',
+      node: ROOT,
+      value: 0,
+      label: '·',
+      role: 'root',
+      depth: 0,
+      slot: 'root',
+      origin: 0,
+    });
+
     /*
-     * The trie is shaped before anything is drawn.
+     * The words are read one letter at a time and the trie is drawn as it
+     * grows.
      *
-     * Whether a state ends a word is only known once every word has been read
-     * to its last letter, and it is part of what a state *is* - the picture
-     * colours those differently, and the log carries a role on the event that
-     * brings a node into being. Allocating first and marking afterwards would
-     * mean a node was drawn as one thing and quietly became another, which the
-     * event log has no way to say and conformance is right to reject.
+     * This used to shape the whole trie first and draw it afterwards, because
+     * whether a state ends a word is part of what the state *is* - the picture
+     * colours those differently - and it is not known until a word has been
+     * read to its last letter. Allocating first and marking afterwards meant a
+     * node was drawn as one thing and quietly became another, which the event
+     * log had no way to say and conformance was right to reject. It can say it
+     * now, so the trie is built in the open and a state is told to count as the
+     * end of a word at the moment it becomes one.
      */
     for (const word of words) {
       let cur = ROOT;
@@ -281,33 +296,28 @@ class Instance implements PluginInstance {
           id, letter, depth, parent: cur,
           next: new Map(), fail: null, output: null, ends: [], matches: 0,
         });
+        events.push({
+          kind: 'NodeAllocated',
+          node: id,
+          // Depth is the length of the string this state stands for, which is
+          // the number worth reading off it.
+          value: depth,
+          label: letter,
+          role: 'inner',
+          depth,
+          slot: `c${letter}`,
+          origin: 0,
+        });
         this.#get(cur).next.set(letter, id);
+        events.push({
+          kind: 'PointerSet', from: cur, slot: `c${letter}`, to: id, pointer: 'child',
+        });
         cur = id;
       }
       this.#get(cur).ends.push(word);
-    }
-
-    const events: SimEvent[] = [];
-    for (const state of this.#states.values()) {
-      events.push({
-        kind: 'NodeAllocated',
-        node: state.id,
-        // Depth is the length of the string this state stands for, which is
-        // the number worth reading off it.
-        value: state.depth,
-        label: state.parent === null ? '·' : state.letter,
-        role: this.#roleOf(state),
-        depth: state.depth,
-        slot: state.parent === null ? 'root' : `c${state.letter}`,
-        origin: 0,
-      });
-    }
-    for (const state of this.#states.values()) {
-      for (const [letter, child] of state.next) {
-        events.push({
-          kind: 'PointerSet', from: state.id, slot: `c${letter}`, to: child, pointer: 'child',
-        });
-      }
+      // Two distinct words cannot end at the same state, so this happens at
+      // most once per state and there are never more of these than words.
+      events.push({ kind: 'NodeUpdated', node: cur, role: this.#roleOf(this.#get(cur)) });
     }
 
     this.#linkUp(events);

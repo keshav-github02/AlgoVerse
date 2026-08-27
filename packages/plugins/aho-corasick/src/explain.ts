@@ -23,6 +23,12 @@ export const explainAhoCorasick: Explainer = (
           + `letters on the way down to it - and it is shared by every word beginning that way, `
           + `which is the only reason a trie is smaller than the words it holds.`;
 
+    case 'NodeUpdated':
+      return `This state is the end of a word now. It was drawn as an ordinary state because it `
+        + `was one until this letter arrived: whether a state finishes a word is not known while `
+        + `the word is still being read, and it changes what the state is rather than merely what `
+        + `it holds.`;
+
     case 'PointerSet': {
       if (event.to === null) return null;
       if (event.slot === 'fail') {
