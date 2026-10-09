@@ -1389,6 +1389,47 @@ repeated relaxation over every edge, which arrives at the same distances by a ro
 code. Twenty-nine graphs, eighty-nine sources. Every route `path` reports is also walked edge by
 edge to confirm it costs what it claims.
 
+### A heap, whose nodes are positions
+
+The binary heap is the first tree where a node is not a value. A node is an *array position*, and
+sifting moves values between positions while the positions stay put, because that is what the array
+does. So a swap is two `NodeUpdated` events, not two nodes changing places, and the picture never
+reshuffles mid-sift. The edge from a parent to a child is arithmetic (`2i+1`, `2i+2`) that nobody
+stores. It is drawn anyway, because the reader needs it to see the tree.
+
+`build` is Floyd's bottom-up heapify, and the check measures that, rather than taking it on trust:
+fewer than `2n` comparisons on reversed input, where pushing one value at a time would need
+`n log n`. The benchmark pushes values smaller than everything already there, so each one climbs the
+full height and the measured curve is the worst case `O(log n)` describes.
+
+### Quiz and challenge: two learning features the log already supported
+
+Neither feature needed a new kind of event, and quizzes needed no plugin code at all.
+
+**A quiz is the event log with the next step hidden.** `core/quiz.ts` walks the log and asks about
+two kinds of event: a `NodeVisited` (which node does the algorithm look at next? Answer by clicking
+it) and a value about to be written (multiple choice, with the other values on screen as wrong
+answers). Playback stops just before the event. Answering steps forward by one, so the plugin's own
+explanation appears straight after the guess. Every structure gets a quiz this way, for the same
+reason every structure gets a console: the generic part is derived and the plugin is never asked.
+Visits are preferred two to one, because a visit is the algorithm choosing and a write is more often
+the algorithm copying.
+
+**A challenge shows a picture and hides the commands that made it.** A plugin declares a target as
+a script, and the player rebuilds the same shape within a budget of commands. The target is a
+script for the same reason a save file is one: a script cannot drift out of step with the plugin,
+and the conformance kit proves every target still builds. Any route to the same shape counts, so
+the comparison has to remove identities. `core/shape.ts` names nodes in the order a walk from the
+roots first reaches them, keeps values, roles and slots, and leaves out ids and labels (several
+plugins put an allocation counter in a label). Sharing survives this: a node that two versions
+share is written once and referred to by index after that, so a persistent history only matches if
+it shares the same nodes, not just if its trees look alike.
+
+The good challenges are the ones where reading the picture does not give the answer away. A BST
+shows its keys and hides their order. An AVL tree hides it twice over, because many orders rotate
+into the same shape. A heap has no challenge, deliberately: any valid heap is rebuilt by pushing its
+own level order, so the picture always gives the answer away.
+
 Two residual compromises, both recorded rather than fixed:
 
 - `StructureNode.origin` names the version that allocated a node. A structure without history sets
@@ -1397,9 +1438,9 @@ Two residual compromises, both recorded rather than fixed:
   "pushes and pops". This holds for now; plugin-declared statistics are the eventual fix.
 
 `plugin-sdk` exports a conformance kit. It is handed a plugin and a script of command strings and
-derives the rest - it names no command. Fourteen checks cover metadata, spec well-formedness,
+derives the rest - it names no command. Fifteen checks cover metadata, spec well-formedness,
 JSON round-tripping of events and serialised state, determinism across fresh instances, `reset`,
-and error-versus-throw behaviour.
+declared challenges that must build a non-empty target, and error-versus-throw behaviour.
 
 The one that carries the most weight:
 
@@ -1725,12 +1766,21 @@ unchanged after both updates.
 ## 13. Open questions
 
 - ~~**Version window.**~~ **Resolved - no cap is needed.** See [Layout](#layout) below.
-- **Keyframe interval.** `K = 50` is a guess. Measure once real logs exist.
+- ~~**Keyframe interval.**~~ **Resolved - `K = 32`,** measured over real logs. The guess had the
+  wrong resource in mind. Scrub time was never the constraint: a 6 700-event red-black session
+  answers an arbitrary step in under 5 ms at `K = 32`, against a 50 ms budget, and holds that
+  budget even at `K = 250`. Memory is the constraint, because `reduce` copies the node map on each
+  event and so keyframes share no structure - that session retained 2.4 million scene cells at
+  `K = 8`, the value the code shipped with, and 600 thousand at 32 for a mean scrub of about a
+  millisecond. Making keyframes share structure would move the ceiling again, and is the fix worth
+  making before the budget is raised a second time.
 - ~~**View modes.**~~ **Resolved.** `diff` is a filter over the union, not a separate layout: it
   reuses the same coordinates and only changes emphasis, so switching between comparing and
   watching never moves a node. Comparison appears whenever the replayed scene reports two or more
   versions - driven by the data, so a structure without history simply never offers it.
-- **License.** Not chosen. Required before any public release.
+- ~~**License.**~~ **Resolved - MIT.** A teaching tool is worth the least when it is hard to
+  reuse, and the plugin contract is an invitation to fork. Copyleft would have bought protection
+  against a hosted fork, which is not a risk worth trading contributors for.
 
 ---
 
@@ -1750,3 +1800,4 @@ Every change from the original project brief, with its reason.
 | 8 | "Time Complexity" and "Space Complexity" listed among runtime statistics | Split into declared (static, from plugin metadata) and measured (counters from the event log) | They are different kinds of value. Separating them enables plotting measured cost against the theoretical curve. |
 | 9 | Not specified | Added: typed error model, seeded RNG in plugin context, `schemaVersion` on serialised state, event `granularity` tags, layout as its own layer, explicit accessibility and performance targets | Each is inexpensive to add now and either a breaking change or a rewrite later. |
 | 10 | Phase 1 is the persistent segment tree alone | Plus one trivial second plugin | A single implementation cannot demonstrate that an abstraction is not shaped around it. |
+| 11 | "Quiz mode" and "Challenge mode" listed without a mechanism | Quizzes are derived from the event log; challenges are plugin-declared target scripts judged by canonical shape | A quiz built from the log works for every structure with no plugin code. A challenge has to say what the goal is, which only the plugin can, but judging it stays generic. |

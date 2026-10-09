@@ -9,8 +9,11 @@ import { DiffPanel } from './components/Diff.tsx';
 import { computeDiff } from './diff.ts';
 import { measurePlugin } from './complexity.ts';
 import { Complexity } from './components/Complexity.tsx';
+import { QuizPanel, useQuiz } from './components/Quiz.tsx';
+import { ChallengePanel, TargetPicture, useChallenge } from './components/Challenge.tsx';
 import {
-  autosave, clearAutosave, clearUrl, copy, readAutosave, readFromUrl, shareLink, urlError,
+  autosave, clearAutosave, clearUrl, copy, markSolved, readAutosave, readFromUrl, readSolved,
+  shareLink, urlError,
 } from './persist.ts';
 
 const BTN = 'rounded border border-[var(--line)] bg-[var(--bg)] px-2 py-1 font-mono text-[11px] ' +
@@ -35,7 +38,7 @@ function Panel({ title, children, className = '' }: {
 export function App(): JSX.Element {
   const {
     pluginId, setPlugin, selected, select, showLabels, toggleLabels,
-    mode, setMode, diffA, diffB, setDiff,
+    mode, setMode, diffA, diffB, setDiff, challengeId, setChallenge,
   } = useUi();
   const [epoch, setEpoch] = useState(0);
 
@@ -65,6 +68,33 @@ export function App(): JSX.Element {
   useSyncExternalStore(session.subscribe, session.getVersion, session.getVersion);
 
   const { playback } = session;
+
+  const quiz = useQuiz(session, mode === 'quiz');
+  const challenge = useChallenge(plugin, mode === 'challenge' ? challengeId : null, session);
+  const [solved, setSolved] = useState(readSolved);
+  const won = challenge?.verdict?.state === 'solved' ? `${plugin.meta.id}/${challenge.challenge.id}` : null;
+  useEffect(() => {
+    if (won === null) return;
+    markSolved(won);
+    setSolved(readSolved());
+  }, [won]);
+
+  /** A challenge starts from nothing, so it gets a session of its own. */
+  const startChallenge = (id: string): void => {
+    setChallenge(id);
+    setMode('challenge');
+    select(null);
+    clearAutosave();
+    clearUrl();
+    setNotice(null);
+    setEpoch((e) => e + 1);
+  };
+
+  const leave = (): void => {
+    if (mode === 'quiz') playback.last();
+    if (mode === 'challenge') setChallenge(null);
+    setMode('live');
+  };
 
   useEffect(() => {
     const failed = urlError();
@@ -99,19 +129,26 @@ export function App(): JSX.Element {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement) return;
+      // Stepping forward in a quiz would read out the answer.
+      if (mode === 'quiz') return;
       if (e.key === ' ') { e.preventDefault(); playback.toggle(); }
       if (e.key === 'ArrowRight') { e.preventDefault(); (e.shiftKey ? playback.nextMark() : playback.next()); }
       if (e.key === 'ArrowLeft') { e.preventDefault(); (e.shiftKey ? playback.prevMark() : playback.prev()); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [playback]);
+  }, [playback, mode]);
 
   // Benchmarks run the plugin at six sizes, so memoise per plugin.
   const report = useMemo(() => measurePlugin(plugin), [plugin]);
 
   const view = session.view();
   const onSelect = useCallback((id: NodeId | null) => select(id), [select]);
+  const asking = mode === 'quiz' && quiz.question?.kind === 'next-visit' && quiz.given === null;
+  const nodeLabel = (id: NodeId): string => {
+    const n = view.state.nodes.get(id);
+    return n === undefined ? `node ${id}` : `${n.label} (${n.value})`;
+  };
 
   const versions = view.state.versions;
   const canDiff = versions.length >= 2;
@@ -204,6 +241,10 @@ export function App(): JSX.Element {
               <span className="font-mono text-[10.5px] text-[var(--dim)]">
                 {mode === 'complexity' && report !== null
                   ? `${report.command} · declared ${report.declared ?? '?'} · measured O(${report.bestFit.growth.label})`
+                  : mode === 'quiz'
+                  ? (quiz.done ? 'quiz finished' : `quiz · step ${playback.step}/${playback.length}`)
+                  : mode === 'challenge' && challenge !== null
+                  ? 'target above · yours below'
                   : mode === 'diff' && diff !== null
                   ? `v${diffA} vs v${Math.min(diffB, versions.length - 1)} - ${diff.diff.shared.length} shared`
                   : describeEvent(session.currentEvent())}
@@ -213,7 +254,7 @@ export function App(): JSX.Element {
                   <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
                     <input
                       type="checkbox" checked={mode === 'diff'}
-                      onChange={() => setMode(mode === 'diff' ? 'live' : 'diff')}
+                      onChange={() => { leave(); if (mode !== 'diff') setMode('diff'); }}
                     />compare
                   </label>
                 )}
@@ -221,8 +262,28 @@ export function App(): JSX.Element {
                   <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
                     <input
                       type="checkbox" checked={mode === 'complexity'}
-                      onChange={() => setMode(mode === 'complexity' ? 'live' : 'complexity')}
+                      onChange={() => { leave(); if (mode !== 'complexity') setMode('complexity'); }}
                     />cost
+                  </label>
+                )}
+                {(playback.length > 0 || mode === 'quiz') && (
+                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
+                    <input
+                      type="checkbox" checked={mode === 'quiz'}
+                      onChange={() => { leave(); if (mode !== 'quiz') setMode('quiz'); }}
+                    />quiz
+                  </label>
+                )}
+                {(plugin.challenges?.length ?? 0) > 0 && (
+                  <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
+                    <input
+                      type="checkbox" checked={mode === 'challenge'}
+                      onChange={() => {
+                        const first = plugin.challenges?.[0];
+                        if (mode === 'challenge' || first === undefined) leave();
+                        else startChallenge(first.id);
+                      }}
+                    />challenge
                   </label>
                 )}
                 <label className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--faint)]">
@@ -233,6 +294,26 @@ export function App(): JSX.Element {
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {mode === 'complexity' ? (
                 <Complexity report={report} pluginName={plugin.meta.name} />
+              ) : mode === 'challenge' && challenge !== null ? (
+                <div className="grid min-h-full grid-rows-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] gap-1.5">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">target</span>
+                  <TargetPicture state={challenge} showLabels={showLabels} />
+                  <span className="border-t border-[var(--line)] pt-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--faint)]">yours</span>
+                  <Scene
+                    scene={view.canvas} off={view.off} visited={view.visited} selected={selected}
+                    showLabels={showLabels} onSelect={onSelect}
+                  />
+                </div>
+              ) : mode === 'quiz' ? (
+              <Scene
+                scene={view.canvas} off={view.off} visited={view.visited}
+                selected={asking ? null : selected} showLabels={showLabels}
+                onSelect={(id) => {
+                  if (!asking) select(id);
+                  else if (id !== null) quiz.answer(id);
+                }}
+                {...(quiz.emphasis === undefined ? {} : { emphasis: quiz.emphasis })}
+              />
               ) : (
               <Scene
                 scene={view.canvas} off={view.off}
@@ -269,6 +350,19 @@ export function App(): JSX.Element {
         </div>
 
         <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-2">
+          {mode === 'quiz' ? (
+          <Panel title="Quiz">
+            <QuizPanel run={quiz} explanation={session.explanation()} label={nodeLabel} />
+          </Panel>
+          ) : mode === 'challenge' ? (
+          <Panel title="Challenge">
+            <ChallengePanel
+              plugin={plugin} state={challenge} solved={solved}
+              onPick={startChallenge}
+              onRetry={() => { if (challengeId !== null) startChallenge(challengeId); }}
+            />
+          </Panel>
+          ) : (
           <Panel title="Explanation">
             <p className="text-xs leading-relaxed text-[var(--dim)]">
               <span className="font-mono text-[10px] text-[var(--faint)]">
@@ -279,6 +373,7 @@ export function App(): JSX.Element {
               {session.explanation()}
             </p>
           </Panel>
+          )}
           <Panel title={mode === 'diff' ? 'Compare versions' : 'Inspector'}>
             {mode === 'diff' && canDiff ? (
               <DiffPanel

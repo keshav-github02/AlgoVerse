@@ -10,6 +10,7 @@
 import {
   classify, decodeSimulation, describeEvent, encodeSimulation, fingerprint, type NodeId,
 } from '@algoverse/core';
+import { budgetOf, judge, targetOf } from '@algoverse/plugin-sdk';
 import { PLUGINS, Session } from './engine.ts';
 import { computeDiff } from './diff.ts';
 import { chartGeometry, measurePlugin } from './complexity.ts';
@@ -475,6 +476,76 @@ check('deleted nodes leave the canvas', (() => {
 check('its commands differ from the first plugin',
   t.plugin.commands.map((c) => c.name).join(',') === 'push,pop,peek',
   t.plugin.commands.map((c) => c.name).join(','));
+
+/* ── Quiz ──────────────────────────────────────────────────────────── */
+
+console.log('\nquiz');
+
+const quizzed = new Session(segTree);
+quizzed.run('build [3 1 4 1 5 9 2 6]');
+quizzed.run('update v0 3 10');
+quizzed.run('query v1 2 6');
+const questions = quizzed.quiz(10);
+check('a session yields a full quiz', questions.length === 10, `${questions.length} questions`);
+check('every question is asked about a step that exists',
+  questions.every((q) => q.step >= 0 && q.step < quizzed.playback.length));
+check('a visit question names a node already on screen at that step', questions.every((q) => {
+  if (q.kind !== 'next-visit') return true;
+  quizzed.playback.seek(q.step);
+  return quizzed.view().state.nodes.has(q.answer);
+}));
+check('another attempt varies the wrong answers, not the steps', (() => {
+  const again = quizzed.quiz(10, 1);
+  return again.map((q) => q.step).join() === questions.map((q) => q.step).join();
+})());
+check('an empty session has nothing to ask', new Session(segTree).quiz(10).length === 0);
+check('every plugin can be quizzed after its own benchmark setup', (() => {
+  for (const p of PLUGINS) {
+    const setup = p.benchmark?.setup(8);
+    if (setup === undefined) continue;
+    const session = new Session(p);
+    for (const line of setup) session.run(line);
+    for (const line of p.benchmark?.probes(8).slice(0, 2) ?? []) session.run(line);
+    if (session.quiz(10).length === 0) return false;
+  }
+  return true;
+})());
+
+/* ── Challenges ────────────────────────────────────────────────────── */
+
+console.log('\nchallenges');
+
+/** Plays a challenge the way the app does: a fresh session, the player's commands, a verdict. */
+function play(pluginId: string, challengeId: string, lines: readonly string[]): string {
+  const plugin = PLUGINS.find((p) => p.meta.id === pluginId);
+  const challenge = plugin?.challenges?.find((c) => c.id === challengeId);
+  if (plugin === undefined || challenge === undefined) return 'missing';
+  const target = targetOf(plugin, challenge);
+  if (!target.ok) return 'unbuildable';
+  const session = new Session(plugin);
+  for (const line of lines) session.run(line);
+  return judge(target.structure, session.structure(), session.script.length, budgetOf(challenge)).state;
+}
+
+check('a BST target is met by its own insertion order',
+  play('persistent-bst', 'bst-balanced', ['build [4 2 6 1 3 5 7]']) === 'solved');
+check('and by a different order with the same shape',
+  play('persistent-bst', 'bst-balanced', ['build [4 6 2 7 5 3 1]']) === 'solved');
+check('but not by the same keys in sorted order',
+  play('persistent-bst', 'bst-balanced', ['build [1 2 3 4 5 6 7]']) === 'out-of-moves');
+check('an AVL target is met by an order the plugin never used',
+  play('persistent-avl', 'avl-perfect', ['build [4 2 6 1 3 5 7]']) === 'solved');
+check('a history challenge needs the history, not just the last tree',
+  play('persistent-bst', 'bst-history', ['build [5 8 6]']) === 'playing');
+check('and accepts the history built another way',
+  play('persistent-bst', 'bst-history', ['build [5 8 2]', 'insert v0 6', 'erase v1 2']) === 'solved');
+check('matching after the budget is spent does not count',
+  play('persistent-avl', 'avl-perfect', ['build [1 2]', 'insert v0 3']) === 'out-of-moves');
+check('a rejected command does not use up the budget',
+  play('persistent-bst', 'bst-balanced', ['insert v9 1', 'build [4 2 6 1 3 5 7]']) === 'solved');
+check('every declared challenge starts unsolved', PLUGINS.every((p) => (p.challenges ?? []).every(
+  (c) => play(p.meta.id, c.id, []) === 'playing',
+)));
 
 console.log(`\n${failures === 0 ? 'all checks passed' : `${failures} FAILED`}\n`);
 process.exitCode = failures === 0 ? 0 : 1;

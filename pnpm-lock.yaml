@@ -56,6 +56,9 @@ importers:
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../../packages/plugins/graph
+      '@algoverse/plugin-heap':
+        specifier: workspace:*
+        version: link:../../packages/plugins/heap
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../../packages/plugins/hld
@@ -201,6 +204,15 @@ importers:
         version: link:../../plugin-sdk
 
   packages/plugins/graph:
+    dependencies:
+      '@algoverse/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@algoverse/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../plugin-sdk
+
+  packages/plugins/heap:
     dependencies:
       '@algoverse/core':
         specifier: workspace:*
@@ -473,6 +485,9 @@ importers:
       '@algoverse/plugin-graph':
         specifier: workspace:*
         version: link:../plugins/graph
+      '@algoverse/plugin-heap':
+        specifier: workspace:*
+        version: link:../plugins/heap
       '@algoverse/plugin-hld':
         specifier: workspace:*
         version: link:../plugins/hld

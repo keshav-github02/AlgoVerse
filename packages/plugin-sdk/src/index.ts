@@ -25,3 +25,12 @@ export {
   type BenchmarkResult,
   type Measurement,
 } from './benchmark.ts';
+
+export {
+  CHALLENGE_SEED,
+  budgetOf,
+  judge,
+  targetOf,
+  type Challenge,
+  type Verdict,
+} from './challenge.ts';

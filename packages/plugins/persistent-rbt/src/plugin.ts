@@ -717,6 +717,15 @@ export const persistentRbt: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainRbt,
+  challenges: [
+    {
+      id: 'rbt-colours',
+      title: 'Shape and colour',
+      brief: 'Match this tree in one build, colours included. Two trees can have the same shape and '
+        + 'still colour it differently, depending on how they got there.',
+      target: ['build [1 2 3 4 5 6 7 8]'],
+    },
+  ],
   benchmark: {
     sizes: [8, 16, 32, 64, 128, 256],
     command: 'find',

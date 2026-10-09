@@ -367,6 +367,14 @@ export const persistentTrie: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainTrie,
+  challenges: [
+    {
+      id: 'trie-history',
+      title: 'Words over time',
+      brief: 'Recreate these three versions. The shared branches tell you which words came first.',
+      target: ['build [tea ten]', 'insert v0 to', 'insert v1 inn'],
+    },
+  ],
   benchmark: {
     // The size that matters here is the length of the word, not how many
     // words are stored: a lookup never touches a branch it does not follow.

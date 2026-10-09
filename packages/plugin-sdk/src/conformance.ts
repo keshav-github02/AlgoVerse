@@ -6,10 +6,11 @@
  */
 
 import {
-  Timeline, createRng, parseCommand, reachableFrom, sceneToStructure,
+  Timeline, createRng, parseCommand, reachableFrom, sceneToStructure, shapeOf,
   type CommandSpec, type NodeId, type SimEvent,
 } from '@algoverse/core';
 import type { AlgorithmPlugin, PluginInstance, StructureGraph } from './contract.ts';
+import { budgetOf, targetOf } from './challenge.ts';
 
 export interface ConformanceResult {
   readonly name: string;
@@ -175,7 +176,29 @@ export function runConformance(
       ? `${finalGraph.nodes.length} nodes, all live`
       : `${stranded} of ${finalGraph.nodes.length} unreachable - allocated then discarded`);
 
-  // 9. Bad semantics are returned, never thrown
+  // 9. Every challenge can be met
+  const challenges = plugin.challenges ?? [];
+  if (challenges.length === 0) {
+    skip('challenges build their targets', 'no challenges declared');
+  } else {
+    const ids = challenges.map((c) => c.id);
+    const empty = shapeOf(fresh().getStructure());
+    let problem: string | null = new Set(ids).size === ids.length ? null : 'challenge ids repeat';
+    for (const c of challenges) {
+      if (problem !== null) break;
+      const built = targetOf(plugin, c);
+      if (!built.ok) problem = `${c.id}: "${built.line}" -> ${built.error.code}`;
+      else if (shapeOf(built.structure) === empty) problem = `${c.id}: the target is an empty structure`;
+      else if (!Number.isInteger(budgetOf(c)) || budgetOf(c) < 1) problem = `${c.id}: budget must be a positive integer`;
+      else if (c.title.length === 0 || c.brief.length === 0) problem = `${c.id}: needs a title and a brief`;
+    }
+    // The target script is itself a solution, so a budget below its length is
+    // only fair if a shorter route exists - which this kit cannot prove, so it
+    // is left to the plugin's own checks.
+    add('challenges build their targets', problem === null, problem ?? `${challenges.length} challenges`);
+  }
+
+  // 10. Bad semantics are returned, never thrown
   const versioned = plugin.commands.filter((c) => c.params.some((p) => p.kind === 'version'));
   if (versioned.length === 0) {
     // Reporting this as a pass would be a lie: nothing was exercised.

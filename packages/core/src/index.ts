@@ -22,6 +22,16 @@ export {
 
 export { describeEvent } from './explain.ts';
 
+export { shapeOf } from './shape.ts';
+
+export {
+  buildQuiz,
+  candidates,
+  isCorrect,
+  type Question,
+  type QuizSource,
+} from './quiz.ts';
+
 export {
   GROWTH_CLASSES,
   classify,

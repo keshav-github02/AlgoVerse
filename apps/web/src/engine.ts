@@ -7,15 +7,15 @@
  */
 
 import {
-  Playback, SIMULATION_SCHEMA, Timeline, createRng, describeEvent, digestOf, layout,
+  Playback, SIMULATION_SCHEMA, Timeline, buildQuiz, createRng, describeEvent, digestOf, layout,
   parseCommand,
   sceneToStructure,
   type LayoutHint, type NodeId, type OperationError, type ParsedCommand,
-  type PositionedScene, type SceneState, type SimEvent, type SimulationFile,
+  type PositionedScene, type Question, type SceneState, type SimEvent, type SimulationFile,
 } from '@algoverse/core';
 import {
   ZERO_STATS, addStats,
-  type AlgorithmPlugin, type PluginInstance, type Statistics,
+  type AlgorithmPlugin, type PluginInstance, type Statistics, type StructureGraph,
 } from '@algoverse/plugin-sdk';
 import { persistentSegmentTree } from '@algoverse/plugin-persistent-segment-tree';
 import { persistentBit } from '@algoverse/plugin-persistent-bit';
@@ -45,10 +45,11 @@ import { mergeSortTree } from '@algoverse/plugin-merge-sort-tree';
 import { suffixTree } from '@algoverse/plugin-suffix-tree';
 import { shortestPath } from '@algoverse/plugin-shortest-path';
 import { stack } from '@algoverse/plugin-stack';
+import { heap } from '@algoverse/plugin-heap';
 import { suffixArray } from '@algoverse/plugin-suffix-array';
 import { zAlgorithm } from '@algoverse/plugin-z-algorithm';
 
-export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, linkCut, waveletTree, mergeSortTree, suffixArray, suffixAutomaton, suffixTree, liChao, kmp, zAlgorithm, rabinKarp, ahoCorasick, mst, bridges, stack];
+export const PLUGINS: readonly AlgorithmPlugin[] = [persistentSegmentTree, persistentBit, fenwickRange, persistentTreap, persistentTrie, persistentBst, persistentAvl, persistentRbt, persistentBtree, persistentSplay, persistentBplus, graph, directedGraph, shortestPath, hld, eulerTour, linkCut, waveletTree, mergeSortTree, suffixArray, suffixAutomaton, suffixTree, liChao, kmp, zAlgorithm, rabinKarp, ahoCorasick, mst, bridges, heap, stack];
 
 export interface HistoryEntry {
   readonly line: string;
@@ -210,6 +211,19 @@ export class Session {
       off: this.#stable.nodes.filter((n) => !present.has(n.node.id)).map((n) => n.node.id),
       visited: [...state.visits.keys()].filter((id) => present.has(id)),
     };
+  }
+
+  /** The structure as the plugin holds it now, which is what a challenge is judged against. */
+  structure(): StructureGraph {
+    return this.#instance.getStructure();
+  }
+
+  /**
+   * Questions over everything run so far. `attempt` varies the wrong answers
+   * between tries without making any one try unrepeatable.
+   */
+  quiz(limit: number, attempt = 0): Question[] {
+    return buildQuiz(this.#timeline, createRng(this.#seed * 7919 + attempt), limit);
   }
 
   /** What the last event did, for the status line. */

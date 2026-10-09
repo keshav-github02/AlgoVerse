@@ -607,6 +607,22 @@ export const persistentAvl: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainAvl,
+  challenges: [
+    {
+      id: 'avl-perfect',
+      title: 'Rotations hide the order',
+      brief: 'Build this tree in one command. Many insertion orders produce it, sorted ones included - '
+        + 'the rotations decide the shape, not you.',
+      target: ['build [1 2 3 4 5 6 7]'],
+    },
+    {
+      id: 'avl-lean',
+      title: 'Balanced, but not perfect',
+      brief: 'Ten keys cannot fill a tree of four levels. Match this exact shape, and every balance '
+        + 'factor in it, with a single build.',
+      target: ['build [1 2 3 4 5 6 7 8 9 10]'],
+    },
+  ],
   benchmark: {
     sizes: [8, 16, 32, 64, 128, 256],
     command: 'find',

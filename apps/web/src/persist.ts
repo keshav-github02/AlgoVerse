@@ -65,6 +65,29 @@ export function clearAutosave(): void {
   }
 }
 
+const SOLVED_KEY = 'algoverse:solved';
+
+/** Challenges this browser has solved, as `pluginId/challengeId`. */
+export function readSolved(): ReadonlySet<string> {
+  try {
+    const stored = window.localStorage.getItem(SOLVED_KEY);
+    const parsed: unknown = stored === null ? [] : JSON.parse(stored);
+    return new Set(Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function markSolved(key: string): void {
+  try {
+    const next = new Set(readSolved());
+    next.add(key);
+    window.localStorage.setItem(SOLVED_KEY, JSON.stringify([...next]));
+  } catch {
+    // A tick that does not persist is still a tick for this visit.
+  }
+}
+
 export async function copy(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

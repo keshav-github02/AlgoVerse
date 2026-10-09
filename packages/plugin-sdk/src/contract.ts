@@ -10,6 +10,7 @@
  */
 
 import type { Benchmark } from './benchmark.ts';
+import type { Challenge } from './challenge.ts';
 import type {
   CommandSpec, LayoutHint, OperationError, ParsedCommand, Rng, SceneState, SimEvent,
   StructureEdge, StructureGraph, StructureNode,
@@ -127,6 +128,8 @@ export interface AlgorithmPlugin {
   readonly explain?: Explainer;
   /** How to build this structure at a given size, so its cost can be measured. */
   readonly benchmark?: Benchmark;
+  /** Targets to rebuild from a picture. See `challenge.ts`. */
+  readonly challenges?: readonly Challenge[];
 }
 
 /** Convenience for plugins returning a failure. */

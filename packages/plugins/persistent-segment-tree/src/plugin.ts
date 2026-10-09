@@ -580,6 +580,15 @@ export const persistentSegmentTree: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainSegmentTree,
+  challenges: [
+    {
+      id: 'seg-history',
+      title: 'Read the leaves',
+      brief: 'Three versions over one array. Compare the leaves of each version to work out what was '
+        + 'written where, then reproduce the history in as many commands as it took.',
+      target: ['build [3 1 4 1 5 9 2 6]', 'update v0 2 7', 'update v1 5 0'],
+    },
+  ],
   benchmark: {
     sizes: [8, 16, 32, 64, 128, 256],
     command: 'query',

@@ -239,8 +239,20 @@ export function reduce(s: SceneState, e: SimEvent): SceneState {
   }
 }
 
-/** Snapshot every Nth step, so scrubbing replays at most this many events. */
-export const KEYFRAME_INTERVAL = 8;
+/**
+ * Snapshot every Nth step, so scrubbing replays at most this many events.
+ *
+ * Measured over real logs rather than guessed, and the surprise was which
+ * resource is scarce. Scrub time is not: a 6 700-event red-black session
+ * answers any step in under 5 ms at this interval, against a 50 ms budget, and
+ * stays inside it even at 250. Memory is, because `reduce` copies the node map
+ * on every event, so keyframes share no structure - that same session retained
+ * 2.4 million scene cells at an interval of 8, and 600 thousand at 32 for a
+ * mean scrub of barely a millisecond. Four times the headroom for four times
+ * the replay is the trade worth taking; past here the curve turns and scrub
+ * cost grows faster than the memory it saves.
+ */
+export const KEYFRAME_INTERVAL = 32;
 
 /** Where one operation ends, so playback can step coarsely as well as finely. */
 export interface Mark {

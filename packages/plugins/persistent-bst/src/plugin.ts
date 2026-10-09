@@ -415,6 +415,29 @@ export const persistentBst: AlgorithmPlugin = {
   },
   commands: COMMANDS,
   explain: explainBst,
+  challenges: [
+    {
+      id: 'bst-balanced',
+      title: 'Three levels, seven keys',
+      brief: 'Find an order to insert these keys so a single build gives this perfectly balanced tree. '
+        + 'A plain BST never rearranges anything, so the shape is the insertion order.',
+      target: ['build [4 2 6 1 3 5 7]'],
+    },
+    {
+      id: 'bst-zigzag',
+      title: 'The worst case that turns',
+      brief: 'Every node has one child and the path changes direction at every step. Build it in one '
+        + 'command. Sorted input is not the only way to make a tree as tall as a list.',
+      target: ['build [1 7 2 6 3 5 4]'],
+    },
+    {
+      id: 'bst-history',
+      title: 'Three versions, one memory',
+      brief: 'Recreate the whole history, not just the last tree. Look at which nodes the versions '
+        + 'share to work out what each operation touched.',
+      target: ['build [5 2 8]', 'insert v0 6', 'erase v1 2'],
+    },
+  ],
   benchmark: {
     sizes: [8, 16, 32, 64, 128, 256],
     command: 'find',

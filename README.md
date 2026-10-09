@@ -18,12 +18,14 @@ pnpm check          # type-check, then every package's property tests
 pnpm demo           # render a scrubbable page to demo/index.html
 ```
 
-Requires Node 22.6 or newer. Packages run directly as TypeScript with no build step; only the
+Requires Node 22.18 or newer. Packages run directly as TypeScript with no build step; only the
 application is bundled.
 
 In the app: choose a structure on the left, type a command below the canvas, then scrub the
 timeline at the top. `Space` plays and pauses, arrow keys step, `Shift` with them jumps operation to
-operation. Click a node to inspect it. Every frame is reconstructed from the event log rather than
+operation. Click a node to inspect it. Tick **quiz** to be asked what the algorithm does next at
+points in what you have run. Where a structure has challenges, tick **challenge** to be shown a
+target and rebuild it within a budget of commands. Every frame is reconstructed from the event log rather than
 read out of the plugin, so scrubbing backwards shows what a node *was*, not what it became.
 
 `pnpm demo` writes the same thing to a standalone page with no server, at `demo/index.html`.
@@ -54,7 +56,7 @@ Four packages, split along the seams that actually matter:
 | --- | --- | --- |
 | `core` | Event types, event log, pure reducer, keyframes, playback, command parser, layout, seeded RNG | working |
 | `plugin-sdk` | The algorithm plugin contract, plus a conformance kit every plugin runs | working |
-| `plugins/*` | One package per algorithm or data structure | 30 structures, from segment tree to suffix trees |
+| `plugins/*` | One package per algorithm or data structure | 31 structures, from segment tree to suffix trees |
 | `renderer` | Turns a positioned scene into pixels. Knows nodes, edges, camera - nothing else | SVG working |
 
 Plus `apps/web`, the application shell: sidebar, canvas, console, inspector, statistics, and the playback timeline.
@@ -97,6 +99,7 @@ algoverse/
 | 4 | Graphs - DFS, BFS, Dijkstra, SCC, topological sort, Prim and Kruskal, bridges and articulation points - **complete** |
 | 5 | Strings - suffix array, KMP, the Z algorithm, Rabin-Karp, Aho-Corasick, the suffix automaton and the suffix tree - **complete** |
 | 6 | Heavy-light decomposition, Euler tour tree, Li Chao tree, link-cut tree, wavelet tree and merge sort tree - **complete** |
+| Learning | Quiz mode, derived from the event log for every structure; challenge mode, with targets for the BST, AVL, red-black, segment tree and trie; plus a binary heap - **complete** |
 
 Phase 1 also ships a deliberately trivial second plugin. One plugin proves nothing about an
 abstraction; two expose most of its leaks.
@@ -131,7 +134,7 @@ property tests that check a structure against a naive reference model over rando
 sequences.
 
 ```
-pnpm check     typecheck, then every plugin's own check file - 39 of them
+pnpm check     typecheck, then every plugin's own check file - 42 of them
 pnpm demo      regenerate demo/index.html, and warn about layouts that drop edges
 pnpm build     compile the application
 pnpm hooks     enable the pre-commit hook that refuses conflict markers
@@ -145,4 +148,4 @@ is the first version that strips types without being asked to.
 
 ## License
 
-Not yet chosen.
+[MIT](LICENSE). Use it, teach with it, fork it; keep the copyright notice.
